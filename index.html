@@ -41,7 +41,28 @@
 	<script src="assets/js/init.js"></script>
 	<script type="text/javascript" src="buttons/js/buttons.js"></script>
 	<link rel="canonical" href="https://ranjithkumarshetty.github.io/" />
-	
+	<script>
+	    (function ($) {
+	        "use strict";
+
+	        $(document).ready(function(){
+
+	            var $window = $(window),
+	                $image = $('.teaserimage-image');
+	            $window.on('scroll', function() {
+	                var top = $window.scrollTop();
+
+	                if (top < 0 || top > 1500) { return; }
+	                $image
+	                    .css('transform', 'translate3d(0px, '+top/3+'px, 0px)')
+	                    .css('opacity', 1-Math.max(top/700, 0));
+	            });
+	            $window.trigger('scroll');
+
+	        });
+
+	    }(jQuery));
+	</script>
 </head>
 <body class="home-template">
 	
@@ -70,31 +91,9 @@
 	    	<a href="https://www.github.com/ranjithkumarshetty/" target="_blank"><i class="fa fa-github"></i></a>&nbsp;&nbsp;
 	        <a href="https://linkedin.com/in/ranjithkumarshetty" target="_blank"><i class="fa fa-linkedin"></i></a>&nbsp;&nbsp;
 	        <a href="https://twitter.com/ranjithshetty" target="_blank"><i class="fa fa-twitter"></i></a>&nbsp;&nbsp;
-	        <a href="https://www.facebook.com/ranjith.kumar.shetty" target="_blank"><i class="fa fa-facebook"></i></a>&nbsp;&nbsp;&nbsp;&nbsp;
+	        <a href="https://www.facebook.com/ranjith.kumar.shetty" target="_blank"><i class="fa fa-facebook"></i></a>&nbsp;&nbsp;
+	        <a href="mailto:ranjithisat@gmail.com" target="_blank"><i class="fa fa-envelope"></i></a>&nbsp;&nbsp;&nbsp;&nbsp;
 	    </div>
 	</header>
-	
-	<script>
-	    (function ($) {
-	        "use strict";
-
-	        $(document).ready(function(){
-
-	            var $window = $(window),
-	                $image = $('.teaserimage-image');
-	            $window.on('scroll', function() {
-	                var top = $window.scrollTop();
-
-	                if (top < 0 || top > 1500) { return; }
-	                $image
-	                    .css('transform', 'translate3d(0px, '+top/3+'px, 0px)')
-	                    .css('opacity', 1-Math.max(top/700, 0));
-	            });
-	            $window.trigger('scroll');
-
-	        });
-
-	    }(jQuery));
-	</script>
 </body>
 </html>
