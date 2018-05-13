@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+    <!-- (1) Optimize for mobile versions: http://goo.gl/EOpFl -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- (1) force latest IE rendering engine: bit.ly/1c8EiC9 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+	<title>Ranjith Kumar Shetty</title>
+	<meta name="description" content="This is where I write stuff." />
+	
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="MobileOptimized" content="320" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Ranjith Kumar Shetty">
+    <meta name="twitter:description" content="This is where I write stuff.">
+    <meta name="twitter:site" content="http://ranjithkumarshetty.com">
+    <meta name="twitter:creator" content="@ranjithshetty">
+    <meta name="google-site-verification" content="">
+    <meta property="fb:admins" content="">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Ranjith Kumar Shetty">
+    <meta property="og:description" content="This is where I write stuff.">
+
+	<link rel="shortcut icon" href="content/images/2014/Oct/favicon.ico">
+    <link rel="stylesheet" href="assets/js/styles/obsidian.css">
+    <link rel="stylesheet" href="//brick.a.ssl.fastly.net/Linux+Libertine:400,400i,700,700i/Open+Sans:400,400i,700,700i">
+	<script src="assets/js/5grid.js">{preset:'legacy',prefix:'assets/css/style',breakpoints:{'desktop':{grid:{gutters:4}}}}</script>
+	<noscript>link rel="stylesheet" href="assets/css/5grid-noscript.css" /><link rel="stylesheet" href="assets/css/style.css" /><link rel="stylesheet" href="assets/css/style-desktop.css" /></noscript>
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
+	<link rel="stylesheet" type="text/css" media="screen" href="assets/css/main.css" />
+    <link rel="stylesheet" type="text/css" media="print" href="assets/css/print.css" />
+
+	<link rel="stylesheet" href="buttons/css/buttons.css">
+ 
+	<script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script src="assets/js/init.js"></script>
+	<script type="text/javascript" src="buttons/js/buttons.js"></script>
+	<link rel="canonical" href="http://ranjithkumarshetty.com/" />
+	
+</head>
+<body class="home-template">
+	
+<!-- Nav -- to be utilized
+	<nav id="nav">
+		<ul>
+			<li><a href="#top">Top</a></li>
+			<li><a href="http://ranjithkumarshetty/blog">Blog</a></li>
+		</ul>
+	</nav>
+-->
+	
+	<!-- Teaser Image -->
+	<div class="teaserimage">
+	    <div class="teaserimage-image" style="background-image: url(content/images/2014/Oct/Light_Blue_Wallpaper.jpg)">
+	        Teaser Image
+	    </div>
+	</div>
+	
+	<!-- Website header -->
+	<header class="blog-header">
+	    <a class="blog-logo" href="http://ranjithkumarshetty.com" style="background-image: url(content/images/2014/Oct/self.jpg)">Ranjith Kumar Shetty</a><br/>
+	    <h1 class="blog-title">Namaskar. I'm <strong>Ranjith</strong>.</h1>
+	    <h2 class="blog-description">A passionate programmer at <strong>Netflix</strong>.</h2>
+	    <div class="custom-links">
+		    <a href="https://www.facebook.com/ranjith.kumar.shetty" target="_blank"><i class="fa fa-facebook"></i></a>&nbsp;&nbsp;
+	        <a href="http://linkedin.com/in/ranjithkumarshetty" target="_blank"><i class="fa fa-linkedin"></i></a>&nbsp;&nbsp;
+	        <a href="https://twitter.com/ranjithshetty" target="_blank"><i class="fa fa-twitter"></i></a>&nbsp;&nbsp;
+	        <a href="https://www.github.com/ranjithkumarshetty/" target="_blank"><i class="fa fa-github"></i></a>&nbsp;&nbsp;&nbsp;&nbsp;
+	    </div>
+	</header>
+	
+	<script>
+	    (function ($) {
+	        "use strict";
+
+	        $(document).ready(function(){
+
+	            var $window = $(window),
+	                $image = $('.teaserimage-image');
+	            $window.on('scroll', function() {
+	                var top = $window.scrollTop();
+
+	                if (top < 0 || top > 1500) { return; }
+	                $image
+	                    .css('transform', 'translate3d(0px, '+top/3+'px, 0px)')
+	                    .css('opacity', 1-Math.max(top/700, 0));
+	            });
+	            $window.trigger('scroll');
+
+	        });
+
+	    }(jQuery));
+	</script>
+</body>
+</html>
