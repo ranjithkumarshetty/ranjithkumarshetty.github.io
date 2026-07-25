@@ -5,9 +5,10 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 	<title>Ranjith Kumar Shetty</title>
-	<meta name="description" content="Ranjith Kumar Shetty — engineer at Netflix." />
-	<meta name="theme-color" content="#eff5fd" media="(prefers-color-scheme: light)" />
-	<meta name="theme-color" content="#0e1116" media="(prefers-color-scheme: dark)" />
+	<meta name="description" content="A passionate engineer at Netflix." />
+	<!-- Matches the band's top color: browser chrome abuts the band, not the body. -->
+	<meta name="theme-color" content="#3f9ae6" media="(prefers-color-scheme: light)" />
+	<meta name="theme-color" content="#1c5289" media="(prefers-color-scheme: dark)" />
 
 	<link rel="canonical" href="https://ranjithkumarshetty.github.io/" />
 	<link rel="shortcut icon" href="content/images/2014/Oct/favicon.ico" />
@@ -27,12 +28,14 @@
 
 	<style>
 		:root {
+			color-scheme: light dark;
+
 			--photo-size: 220px;
 
 			--bg:         #ffffff;
 			--fg:         #333333;
 			--muted:      #666666;
-			--icon:       #999999;
+			--icon:       #8a8a8a;
 			--icon-hover: #333333;
 			--band-top:   #3f9ae6;
 			--band-bot:   #62b1ef;
@@ -62,9 +65,6 @@
 
 		body {
 			margin: 0;
-			min-height: 100vh;
-			display: flex;
-			flex-direction: column;
 			background: var(--bg);
 			color: var(--fg);
 			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -83,7 +83,6 @@
 		}
 
 		.card {
-			flex: 1;
 			display: flex;
 			flex-direction: column;
 			align-items: center;
@@ -102,11 +101,8 @@
 			box-shadow: 0 1px 3px var(--photo-glow);
 		}
 
-		/* width:100% keeps text wrapping inside .card — an align-items:center
-		   flex column would otherwise size these to max-content and overflow. */
 		.name,
 		.role {
-			width: 100%;
 			max-width: 34rem;
 			overflow-wrap: break-word;
 		}
@@ -176,6 +172,16 @@
 			.role { font-size: 1rem; }
 		}
 
+		/* Landscape phones and short windows: the width query can't reach them
+		   (a 844x390 phone is 844 wide), so shrink on height instead. */
+		@media (max-height: 560px) {
+			:root { --photo-size: 120px; }
+			.band { height: 34vh; min-height: 110px; }
+			.name { margin-top: 20px; font-size: clamp(1.75rem, 4vw, 2.25rem); }
+			.links { margin-top: 20px; }
+			.card { padding-bottom: 32px; }
+		}
+
 		@media (prefers-reduced-motion: reduce) {
 			.links a { transition: none; }
 			.links a:hover,
@@ -188,7 +194,7 @@
 
 	<main class="card">
 		<img class="photo" src="content/images/2014/Oct/self.jpg"
-		     width="128" height="128" alt="Ranjith Kumar Shetty" />
+		     width="220" height="220" alt="Ranjith Kumar Shetty" />
 
 		<h1 class="name">Namaskar. I&rsquo;m <strong>Ranjith</strong>.</h1>
 		<p class="role">A passionate engineer at <strong>Netflix</strong>.</p>
@@ -200,7 +206,7 @@
 			<a href="https://linkedin.com/in/ranjithkumarshetty" aria-label="LinkedIn" rel="me noopener" target="_blank">
 				<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286ZM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124Zm1.782 13.019H3.555V9h3.564v11.452ZM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003Z"/></svg>
 			</a>
-			<a href="https://twitter.com/ranjithshetty" aria-label="Twitter" rel="me noopener" target="_blank">
+			<a href="https://x.com/ranjithshetty" aria-label="X" rel="me noopener" target="_blank">
 				<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932 6.064-6.933Zm-1.291 19.49h2.039L6.486 3.24H4.298l13.312 17.403Z"/></svg>
 			</a>
 			<a href="https://www.facebook.com/ranjith.kumar.shetty" aria-label="Facebook" rel="me noopener" target="_blank">
