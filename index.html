@@ -1,99 +1,215 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 	<meta charset="utf-8" />
-    <!-- (1) Optimize for mobile versions: http://goo.gl/EOpFl -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- (1) force latest IE rendering engine: bit.ly/1c8EiC9 -->
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 	<title>Ranjith Kumar Shetty</title>
-	<meta name="description" content="This is where I write stuff." />
-	
-    <meta name="HandheldFriendly" content="True" />
-    <meta name="MobileOptimized" content="320" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Ranjith Kumar Shetty">
-    <meta name="twitter:description" content="This is where I write stuff.">
-    <meta name="twitter:site" content="https://ranjithkumarshetty.github.io/">
-    <meta name="twitter:creator" content="@ranjithshetty">
-    <meta name="google-site-verification" content="">
-    <meta property="fb:admins" content="">
-    <meta property="og:type" content="article">
-    <meta property="og:title" content="Ranjith Kumar Shetty">
-    <meta property="og:description" content="This is where I write stuff.">
+	<meta name="description" content="Ranjith Kumar Shetty — engineer at Netflix." />
+	<meta name="theme-color" content="#eff5fd" media="(prefers-color-scheme: light)" />
+	<meta name="theme-color" content="#0e1116" media="(prefers-color-scheme: dark)" />
 
-	<link rel="shortcut icon" href="content/images/2014/Oct/favicon.ico">
-    <link rel="stylesheet" href="assets/js/styles/obsidian.css">
-    <link rel="stylesheet" href="//brick.a.ssl.fastly.net/Linux+Libertine:400,400i,700,700i/Open+Sans:400,400i,700,700i">
-	<script src="assets/js/5grid.js">{preset:'legacy',prefix:'assets/css/style',breakpoints:{'desktop':{grid:{gutters:4}}}}</script>
-	<noscript>link rel="stylesheet" href="assets/css/5grid-noscript.css" /><link rel="stylesheet" href="assets/css/style.css" /><link rel="stylesheet" href="assets/css/style-desktop.css" /></noscript>
-    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
-	<link rel="stylesheet" type="text/css" media="screen" href="assets/css/main.css" />
-    <link rel="stylesheet" type="text/css" media="print" href="assets/css/print.css" />
-
-	<link rel="stylesheet" href="buttons/css/buttons.css">
- 
-	<script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
-	<script src="assets/js/init.js"></script>
-	<script type="text/javascript" src="buttons/js/buttons.js"></script>
 	<link rel="canonical" href="https://ranjithkumarshetty.github.io/" />
-	<script>
-	    (function ($) {
-	        "use strict";
+	<link rel="shortcut icon" href="content/images/2014/Oct/favicon.ico" />
 
-	        $(document).ready(function(){
+	<meta property="og:type" content="profile" />
+	<meta property="og:url" content="https://ranjithkumarshetty.github.io/" />
+	<meta property="og:title" content="Ranjith Kumar Shetty" />
+	<meta property="og:description" content="A passionate engineer at Netflix." />
+	<meta property="og:image" content="https://ranjithkumarshetty.github.io/content/images/2014/Oct/self.jpg" />
 
-	            var $window = $(window),
-	                $image = $('.teaserimage-image');
-	            $window.on('scroll', function() {
-	                var top = $window.scrollTop();
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:site" content="@ranjithshetty" />
+	<meta name="twitter:creator" content="@ranjithshetty" />
+	<meta name="twitter:title" content="Ranjith Kumar Shetty" />
+	<meta name="twitter:description" content="A passionate engineer at Netflix." />
+	<meta name="twitter:image" content="https://ranjithkumarshetty.github.io/content/images/2014/Oct/self.jpg" />
 
-	                if (top < 0 || top > 1500) { return; }
-	                $image
-	                    .css('transform', 'translate3d(0px, '+top/3+'px, 0px)')
-	                    .css('opacity', 1-Math.max(top/700, 0));
-	            });
-	            $window.trigger('scroll');
+	<style>
+		:root {
+			--photo-size: 220px;
 
-	        });
+			--bg:         #ffffff;
+			--fg:         #333333;
+			--muted:      #666666;
+			--icon:       #999999;
+			--icon-hover: #333333;
+			--band-top:   #3f9ae6;
+			--band-bot:   #62b1ef;
+			--ring:       #1f6fc4;
+			--photo-edge: #ffffff;
+			--photo-glow: rgba(0, 0, 0, .3);
+		}
 
-	    }(jQuery));
-	</script>
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--bg:         #12151a;
+				--fg:         #e8ebf0;
+				--muted:      #9aa4b2;
+				--icon:       #7e8896;
+				--icon-hover: #e8ebf0;
+				--band-top:   #1c5289;
+				--band-bot:   #2b6ba8;
+				--ring:       #7cb4ff;
+				--photo-edge: #12151a;
+				--photo-glow: rgba(0, 0, 0, .6);
+			}
+		}
+
+		* { box-sizing: border-box; }
+
+		html { -webkit-text-size-adjust: 100%; }
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column;
+			background: var(--bg);
+			color: var(--fg);
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+			             "Helvetica Neue", Arial, sans-serif;
+			-webkit-font-smoothing: antialiased;
+			text-rendering: optimizeLegibility;
+		}
+
+		/* Saturated band ending on a hard edge against --bg, mirroring the
+		   original wallpaper-over-white split. Replaces the parallax image. */
+		.band {
+			height: 52vh;
+			min-height: 260px;
+			max-height: 460px;
+			background: linear-gradient(160deg, var(--band-top), var(--band-bot));
+		}
+
+		.card {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			text-align: center;
+			padding: 0 24px 64px;
+			margin-top: calc(var(--photo-size) / -2);
+		}
+
+		.photo {
+			width: var(--photo-size);
+			height: var(--photo-size);
+			border-radius: 50%;
+			object-fit: cover;
+			border: 3px solid var(--photo-edge);
+			background: var(--photo-edge);
+			box-shadow: 0 1px 3px var(--photo-glow);
+		}
+
+		/* width:100% keeps text wrapping inside .card — an align-items:center
+		   flex column would otherwise size these to max-content and overflow. */
+		.name,
+		.role {
+			width: 100%;
+			max-width: 34rem;
+			overflow-wrap: break-word;
+		}
+
+		/* Light, tightly-tracked display type with a bold name — the original
+		   header's defining treatment. */
+		.name {
+			margin: 30px 0 0;
+			font-size: clamp(2rem, 5.6vw, 3.125rem);
+			font-weight: 200;
+			letter-spacing: -.04em;
+			line-height: 1.1;
+		}
+
+		.name strong { font-weight: 700; }
+
+		.role {
+			margin: 10px 0 0;
+			font-size: 1.125rem;
+			font-weight: 400;
+			line-height: 1.5;
+			color: var(--muted);
+		}
+
+		.role strong {
+			font-weight: 600;
+			color: var(--fg);
+		}
+
+		.links {
+			display: flex;
+			gap: 10px;
+			margin-top: 32px;
+		}
+
+		.links a {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 44px;
+			height: 44px;
+			border-radius: 50%;
+			color: var(--icon);
+			transition: color .15s ease, transform .15s ease;
+		}
+
+		.links a:hover,
+		.links a:focus-visible {
+			color: var(--icon-hover);
+			transform: translateY(-2px);
+		}
+
+		.links a:focus-visible {
+			outline: 2px solid var(--ring);
+			outline-offset: 2px;
+		}
+
+		.links svg {
+			width: 21px;
+			height: 21px;
+			fill: currentColor;
+		}
+
+		@media (max-width: 560px) {
+			:root { --photo-size: 150px; }
+			.band { min-height: 200px; }
+			.role { font-size: 1rem; }
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.links a { transition: none; }
+			.links a:hover,
+			.links a:focus-visible { transform: none; }
+		}
+	</style>
 </head>
-<body class="home-template">
-	
-<!-- Nav -- to be utilized
-	<nav id="nav">
-		<ul>
-			<li><a href="#top">Top</a></li>
-			<li><a href="http://ranjithkumarshetty/blog">Blog</a></li>
-		</ul>
-	</nav>
--->
-	
-	<!-- Teaser Image -->
-	<div class="teaserimage">
-	    <div class="teaserimage-image" style="background-image: url(content/images/2014/Oct/Light_Blue_Wallpaper.jpg)">
-	        Teaser Image
-	    </div>
-	</div>
-	
-	<!-- Website header -->
-	<header class="blog-header">
-	    <a class="blog-logo" href="https://ranjithkumarshetty.github.io/" style="background-image: url(content/images/2014/Oct/self.jpg)">Ranjith Kumar Shetty</a><br/>
-	    <h1 class="blog-title">Namaskar. I'm <strong>Ranjith</strong>.</h1>
-	    <h2 class="blog-description">A passionate programmer at <strong>Netflix</strong>.</h2>
-	    <div class="custom-links">
-	    	<a href="https://www.github.com/ranjithkumarshetty/" target="_blank"><i class="fa fa-github"></i></a>&nbsp;&nbsp;
-	        <a href="https://linkedin.com/in/ranjithkumarshetty" target="_blank"><i class="fa fa-linkedin"></i></a>&nbsp;&nbsp;
-	        <a href="https://twitter.com/ranjithshetty" target="_blank"><i class="fa fa-twitter"></i></a>&nbsp;&nbsp;
-	        <a href="https://www.facebook.com/ranjith.kumar.shetty" target="_blank"><i class="fa fa-facebook"></i></a>&nbsp;&nbsp;
-	        <a href="mailto:ranjithisat@gmail.com" target="_blank"><i class="fa fa-envelope"></i></a>&nbsp;&nbsp;&nbsp;&nbsp;
-	    </div>
-	</header>
+<body>
+	<div class="band"></div>
+
+	<main class="card">
+		<img class="photo" src="content/images/2014/Oct/self.jpg"
+		     width="128" height="128" alt="Ranjith Kumar Shetty" />
+
+		<h1 class="name">Namaskar. I&rsquo;m <strong>Ranjith</strong>.</h1>
+		<p class="role">A passionate engineer at <strong>Netflix</strong>.</p>
+
+		<nav class="links" aria-label="Elsewhere">
+			<a href="https://github.com/ranjithkumarshetty" aria-label="GitHub" rel="me noopener" target="_blank">
+				<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12Z"/></svg>
+			</a>
+			<a href="https://linkedin.com/in/ranjithkumarshetty" aria-label="LinkedIn" rel="me noopener" target="_blank">
+				<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286ZM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124Zm1.782 13.019H3.555V9h3.564v11.452ZM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003Z"/></svg>
+			</a>
+			<a href="https://twitter.com/ranjithshetty" aria-label="Twitter" rel="me noopener" target="_blank">
+				<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932 6.064-6.933Zm-1.291 19.49h2.039L6.486 3.24H4.298l13.312 17.403Z"/></svg>
+			</a>
+			<a href="https://www.facebook.com/ranjith.kumar.shetty" aria-label="Facebook" rel="me noopener" target="_blank">
+				<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.412c0-3.026 1.792-4.697 4.533-4.697 1.313 0 2.686.236 2.686.236v2.971H15.83c-1.491 0-1.956.931-1.956 1.887v2.265h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073Z"/></svg>
+			</a>
+			<a href="mailto:ranjithisat@gmail.com" aria-label="Email">
+				<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M1.5 8.67v8.58a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3V8.67l-8.928 5.493a3 3 0 0 1-3.144 0L1.5 8.67Z"/><path d="M22.5 6.908V6.75a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3v.158l9.714 5.978a1.5 1.5 0 0 0 1.572 0L22.5 6.908Z"/></svg>
+			</a>
+		</nav>
+	</main>
 </body>
 </html>
