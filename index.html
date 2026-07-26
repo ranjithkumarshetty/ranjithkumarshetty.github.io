@@ -42,6 +42,8 @@
 			--ring:       #1f6fc4;
 			--photo-edge: #ffffff;
 			--photo-glow: rgba(0, 0, 0, .3);
+			--card:       #fafbfc;
+			--card-edge:  #d4d9e0;
 		}
 
 		@media (prefers-color-scheme: dark) {
@@ -56,6 +58,8 @@
 				--ring:       #7cb4ff;
 				--photo-edge: #12151a;
 				--photo-glow: rgba(0, 0, 0, .6);
+				--card:       #171b21;
+				--card-edge:  #333b47;
 			}
 		}
 
@@ -166,10 +170,84 @@
 			fill: currentColor;
 		}
 
+		/* Things built for fun. A column, so the next one just slots in under
+		   this one without touching the layout. */
+		.side {
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+			width: 100%;
+			max-width: 34rem;
+			margin-top: 48px;
+			text-align: left;
+		}
+
+		.side-title {
+			margin: 0;
+			font-size: .8125rem;
+			font-weight: 600;
+			letter-spacing: .12em;
+			text-transform: uppercase;
+			color: var(--muted);
+		}
+
+		.project {
+			display: flex;
+			align-items: center;
+			gap: 14px;
+			padding: 16px 18px;
+			border: 1px solid var(--card-edge);
+			border-radius: 14px;
+			background: var(--card);
+			color: inherit;
+			text-decoration: none;
+			transition: border-color .15s ease, transform .15s ease;
+		}
+
+		.project:hover,
+		.project:focus-visible {
+			border-color: var(--ring);
+			transform: translateY(-2px);
+		}
+
+		.project:focus-visible {
+			outline: 2px solid var(--ring);
+			outline-offset: 2px;
+		}
+
+		.project-emoji {
+			font-size: 1.75rem;
+			line-height: 1;
+		}
+
+		.project-body {
+			display: flex;
+			flex-direction: column;
+			gap: 3px;
+		}
+
+		.project-name { font-weight: 600; }
+
+		.project-note {
+			font-size: .9375rem;
+			line-height: 1.45;
+			color: var(--muted);
+		}
+
+		.project-go {
+			margin-left: auto;
+			color: var(--icon);
+			font-size: 1.25rem;
+		}
+
+		.project:hover .project-go,
+		.project:focus-visible .project-go { color: var(--icon-hover); }
+
 		@media (max-width: 560px) {
 			:root { --photo-size: 150px; }
 			.band { min-height: 200px; }
 			.role { font-size: 1rem; }
+			.side { margin-top: 36px; }
 		}
 
 		/* Landscape phones and short windows: the width query can't reach them
@@ -180,12 +258,16 @@
 			.name { margin-top: 20px; font-size: clamp(1.75rem, 4vw, 2.25rem); }
 			.links { margin-top: 20px; }
 			.card { padding-bottom: 32px; }
+			.side { margin-top: 28px; }
 		}
 
 		@media (prefers-reduced-motion: reduce) {
-			.links a { transition: none; }
+			.links a,
+			.project { transition: none; }
 			.links a:hover,
-			.links a:focus-visible { transform: none; }
+			.links a:focus-visible,
+			.project:hover,
+			.project:focus-visible { transform: none; }
 		}
 	</style>
 </head>
@@ -216,6 +298,20 @@
 				<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M1.5 8.67v8.58a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3V8.67l-8.928 5.493a3 3 0 0 1-3.144 0L1.5 8.67Z"/><path d="M22.5 6.908V6.75a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3v.158l9.714 5.978a1.5 1.5 0 0 0 1.572 0L22.5 6.908Z"/></svg>
 			</a>
 		</nav>
+
+		<section class="side" aria-labelledby="side-title">
+			<h2 id="side-title" class="side-title">Weekend tinkering</h2>
+
+			<a class="project" href="projects/jungle-addition/">
+				<span class="project-emoji" aria-hidden="true">🐯</span>
+				<span class="project-body">
+					<strong class="project-name">Jungle Addition</strong>
+					<span class="project-note">A jungle-trail maths game I built for my five-year-old.
+					Twenty stops, five ways to play, and every bit of progress stays in the browser.</span>
+				</span>
+				<span class="project-go" aria-hidden="true">&rarr;</span>
+			</a>
+		</section>
 	</main>
 </body>
 </html>
