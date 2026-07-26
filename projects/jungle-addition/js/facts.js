@@ -7,8 +7,14 @@ window.Facts = (function () {
   const QUESTIONS_PER_STOP = 6;
   const MAX_OPTION = 25;
 
-  /* Distractors are near-misses in priority order, so guessing doesn't pay. */
+  /* Distractors are near-misses in priority order, so guessing doesn't pay.
+     Easy pushes the wrong answers further away, hard crowds them in. */
   const DISTRACTOR_OFFSETS = [1, -1, 2, -2, 3, -3, 10, -10];
+  const GENTLE_OFFSETS = [2, -2, 3, -3, 5, -5, 10, -10];
+  const TIGHT_OFFSETS = [1, -1, 2, -2, 3, -3];
+
+  const DIFFICULTIES = ['easy', 'medium', 'hard'];
+  let difficulty = 'medium';
 
   const REGIONS = [
     { id: 0, name: 'Riverbank',      emoji: '🌊',  stops: [1, 2, 3, 4] },
@@ -80,21 +86,23 @@ window.Facts = (function () {
     { id: 8,  region: 1, game: 'match',    title: 'Firefly Hollow',    min: 6,  max: 15, build: () => sumsBetween(6, 15) },
     { id: 9,  region: 2, game: 'quick',    title: 'Cloud Ridge',       min: 11, max: 20, build: () => sumsBetween(11, 20) },
     { id: 10, region: 2, game: 'missing',  title: 'Echo Caves',        min: 11, max: 20, build: () => sumsBetween(11, 20) },
-    { id: 11, region: 2, game: 'quick',    title: 'Three Peaks',       min: 10, max: 20, build: () => threeAddends(10, 20) },
+    { id: 11, region: 2, game: 'quick',    title: 'Three Peaks',       min: 10, max: 20, build: () => threeAddends(10, 20), easyBuild: () => sumsBetween(10, 20) },
     { id: 12, region: 2, game: 'match',    title: 'Summit Temple',     min: 10, max: 20, build: () => sumsBetween(10, 20) },
 
     /* Regions 3 and 4 hold the math ceiling steady and raise difficulty
        structurally instead: tighter distractors, three addends, compound
        equality. `pick`/`stones`/`tight`/`compound` are read by the mechanic
-       that owns the stop; `frame` is dramatic dressing over any of them. */
+       that owns the stop; `frame` is dramatic dressing over any of them.
+       `easyBuild` is the two-addend pool Easy swaps in — same numbers to
+       learn, one fewer thing to hold in your head at once. */
     { id: 13, region: 3, game: 'build',   title: 'Fruit Vault',    min: 8,  max: 15, pick: 2, build: () => sumsBetween(8, 15) },
     { id: 14, region: 3, game: 'route',   title: 'Treasure Trail', min: 8,  max: 15, stones: 3, build: () => sumsBetween(8, 15) },
     { id: 15, region: 3, game: 'balance', title: 'Stone Scales',   min: 10, max: 18, build: () => sumsBetween(10, 18) },
     { id: 16, region: 3, game: 'route',   title: 'Idol Chamber',   min: 10, max: 20, stones: 3, frame: 'rescue', build: () => sumsBetween(10, 20) },
-    { id: 17, region: 4, game: 'build',   title: 'Sky Orchard',    min: 12, max: 20, pick: 3, build: () => threeAddends(12, 20) },
+    { id: 17, region: 4, game: 'build',   title: 'Sky Orchard',    min: 12, max: 20, pick: 3, build: () => threeAddends(12, 20), easyBuild: () => sumsBetween(12, 20) },
     { id: 18, region: 4, game: 'balance', title: 'Twin Scales',    min: 12, max: 20, compound: true, build: () => sumsBetween(12, 20) },
     { id: 19, region: 4, game: 'route',   title: 'Cliff Crossing', min: 12, max: 20, stones: 3, tight: true, build: () => sumsBetween(12, 20) },
-    { id: 20, region: 4, game: 'build',   title: 'Storm Summit',   min: 12, max: 20, pick: 3, tight: true, frame: 'rescue', build: () => threeAddends(12, 20) }
+    { id: 20, region: 4, game: 'build',   title: 'Storm Summit',   min: 12, max: 20, pick: 3, tight: true, frame: 'rescue', build: () => threeAddends(12, 20), easyBuild: () => sumsBetween(12, 20) }
   ];
 
   /* Every distinct game type, in roster order — the All-Rounder badge and the
@@ -103,17 +111,65 @@ window.Facts = (function () {
     return STOPS.map(s => s.game).filter((g, i, all) => all.indexOf(g) === i);
   }
 
+  /* ---- difficulty --------------------------------------------------------
+     One dial over the roster rather than three rosters. Every mechanic already
+     reads its shape off the stop it is handed, so bending the config here bends
+     the whole game and no mechanic learns a new word. The raw STOPS table stays
+     untouched — the map still draws the same trail at every level. */
+
+  function setDifficulty(level) {
+    difficulty = DIFFICULTIES.includes(level) ? level : 'medium';
+    return difficulty;
+  }
+
+  function getDifficulty() { return difficulty; }
+
+  /* Easy: two addends everywhere, two stones at a fork, no compound scales and
+     wrong answers that sit visibly apart. Hard: near-miss distractors on every
+     stop, not just the last two. */
+  function tuned(config) {
+    if (difficulty === 'hard') return Object.assign({}, config, { tight: true });
+    if (difficulty !== 'easy') return config;
+    return Object.assign({}, config, {
+      pick: 2,
+      stones: 2,
+      tight: false,
+      compound: false,
+      build: config.easyBuild || config.build
+    });
+  }
+
+  function offsetsFor(spread) {
+    if (spread === 'gentle') return GENTLE_OFFSETS;
+    if (spread === 'tight') return TIGHT_OFFSETS;
+    if (spread === 'normal') return DISTRACTOR_OFFSETS;
+    if (difficulty === 'easy') return GENTLE_OFFSETS;
+    if (difficulty === 'hard') return TIGHT_OFFSETS;
+    return DISTRACTOR_OFFSETS;
+  }
+
+  /* Answers over ten, three addends and the structural stops are the ones worth
+     a bonus — the same judgement the roster already makes, read back out. */
+  function isHardProblem(problem, config) {
+    return problem.answer > 10
+        || problem.addends.length > 2
+        || !!(config && (config.tight || config.compound));
+  }
+
   const poolCache = {};
 
   function stop(id) {
     const found = STOPS.find(s => s.id === id);
     if (!found) throw new Error('unknown stop ' + id);
-    return found;
+    return tuned(found);
   }
 
+  /* Keyed by difficulty too: Easy hands back a different pool for the
+     three-addend stops, and a stale cache would serve the wrong one. */
   function poolForStop(id) {
-    if (!poolCache[id]) poolCache[id] = stop(id).build();
-    return poolCache[id];
+    const key = difficulty + ':' + id;
+    if (!poolCache[key]) poolCache[key] = stop(id).build();
+    return poolCache[key];
   }
 
   function regionOf(stopId) {
@@ -193,11 +249,12 @@ window.Facts = (function () {
 
   /* ---- answer options ---------------------------------------------------- */
 
-  function buildOptions(answer, rng) {
+  /* `spread` overrides the difficulty default — 'gentle', 'normal' or 'tight'. */
+  function buildOptions(answer, rng, spread) {
     rng = rng || Math.random;
     const options = [answer];
 
-    for (const offset of DISTRACTOR_OFFSETS) {
+    for (const offset of offsetsFor(spread)) {
       if (options.length === 4) break;
       const candidate = answer + offset;
       if (candidate < 0 || candidate > MAX_OPTION) continue;
@@ -238,6 +295,7 @@ window.Facts = (function () {
 
   return {
     QUESTIONS_PER_STOP,
+    DIFFICULTIES,
     REGIONS,
     STOPS,
     stop,
@@ -247,6 +305,9 @@ window.Facts = (function () {
     gameTypes,
     decompose,
     buildOptions,
-    generateStop
+    generateStop,
+    setDifficulty,
+    getDifficulty,
+    isHardProblem
   };
 })();

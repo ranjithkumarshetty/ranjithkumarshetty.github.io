@@ -282,6 +282,20 @@ window.Celebrate = (function () {
     layer.appendChild(banner);
   }
 
+  /* A small label that lifts off an element and fades — "+12", "Nice!". Anchored
+     to the thing it is about, unlike bigText which owns the whole screen. */
+  function floatText(element, text, className) {
+    const layer = Celebrate.balloonLayer;
+    if (!layer || !element || !text) return;
+
+    const box = element.getBoundingClientRect();
+    const label = disposable('float-label' + (className ? ' ' + className : ''));
+    label.textContent = text;
+    label.style.left = (box.left + box.width / 2) + 'px';
+    label.style.top = (box.top + box.height / 4) + 'px';
+    layer.appendChild(label);
+  }
+
   /* Every screen effect is a one-shot div that sweeps itself up. */
   function disposable(className) {
     const node = document.createElement('div');
@@ -308,6 +322,6 @@ window.Celebrate = (function () {
     init, pulse, clearConfetti, clearAll, reducedMotion,
     confetti, fireworks, balloons,
     leafPuff, starBurst,
-    flash, emojiRain, bigText
+    flash, emojiRain, bigText, floatText
   };
 })();

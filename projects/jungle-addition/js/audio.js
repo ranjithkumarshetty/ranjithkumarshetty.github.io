@@ -24,6 +24,7 @@ window.Sound = (function () {
       ctx = null;
     }
     pickVoice();
+    startMusic();
   }
 
   function pickVoice() {
@@ -50,8 +51,10 @@ window.Sound = (function () {
 
   /* ---- sound effects ----------------------------------------------------- */
 
-  function tone(freq, startOffset, duration, type, peak) {
-    if (!ctx || muted) return;
+  /* The raw voice. Music and effects have separate switches, so the mute check
+     lives one layer up in tone() rather than down here. */
+  function emit(freq, startOffset, duration, type, peak) {
+    if (!ctx) return;
     try {
       const start = ctx.currentTime + startOffset;
       const osc = ctx.createOscillator();
@@ -69,6 +72,11 @@ window.Sound = (function () {
     } catch (err) {
       /* An exhausted or closed AudioContext should never break gameplay. */
     }
+  }
+
+  function tone(freq, startOffset, duration, type, peak) {
+    if (muted) return;
+    emit(freq, startOffset, duration, type, peak);
   }
 
   function correct() {
@@ -92,6 +100,87 @@ window.Sound = (function () {
     [523, 659, 784, 1047, 1319].forEach((freq, i) => tone(freq, i * 0.1, 0.5, 'sine', 0.18));
     tone(392, 0.55, 0.9, 'triangle', 0.14);
   }
+
+  /* ---- music -------------------------------------------------------------- */
+
+  /* A loop, not a song: a few pentatonic notes over a walking bass, quiet enough
+     to sit under speech. Two moods so the rescue stops feel like a chase, and
+     nothing to download — the whole soundtrack is this table. */
+  const MOODS = {
+    jungle: {
+      stepMs: 250,
+      noteMs: 0.22,
+      melody: [523, 659, 784, 659, 587, 784, 880, 784,
+               523, 659, 784, 1047, 880, 784, 659, 587],
+      bass: [131, 131, 175, 196]
+    },
+    chase: {
+      stepMs: 170,
+      noteMs: 0.15,
+      melody: [587, 698, 880, 698, 622, 740, 932, 740],
+      bass: [147, 147, 156, 175]
+    }
+  };
+
+  const MUSIC_PEAK = 0.045;
+
+  let musicOn = true;
+  let musicTimer = null;
+  let musicStep = 0;
+  let mood = 'jungle';
+
+  function setMusicOn(value) {
+    musicOn = !!value;
+    if (musicOn) startMusic(); else stopMusic();
+    return musicOn;
+  }
+
+  function isMusicOn() { return musicOn; }
+
+  /* Switching mood restarts the loop from the top so the new tempo lands on a
+     beat rather than halfway through the old one. */
+  function setMood(name) {
+    const next = MOODS[name] ? name : 'jungle';
+    if (next === mood) return mood;
+
+    mood = next;
+    musicStep = 0;
+    if (musicTimer) {
+      stopMusic();
+      startMusic();
+    }
+    return mood;
+  }
+
+  function startMusic() {
+    if (muted || !musicOn || !ctx || musicTimer) return;
+    stepMusic();
+    musicTimer = setInterval(stepMusic, MOODS[mood].stepMs);
+  }
+
+  function stopMusic() {
+    if (musicTimer) clearInterval(musicTimer);
+    musicTimer = null;
+  }
+
+  function stepMusic() {
+    const tune = MOODS[mood];
+    emit(tune.melody[musicStep % tune.melody.length], 0, tune.noteMs, 'triangle', MUSIC_PEAK);
+
+    if (musicStep % 4 === 0) {
+      const bass = tune.bass[(musicStep / 4) % tune.bass.length];
+      emit(bass, 0, (tune.stepMs * 3) / 1000, 'sine', MUSIC_PEAK * 0.9);
+    }
+    musicStep += 1;
+  }
+
+  /* A tune playing on in a backgrounded tab is the fastest way to get a game
+     deleted, and timers there are throttled into a stutter anyway. */
+  try {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stopMusic(); else startMusic();
+    });
+  } catch (err) { /* no document, no tab to hide */ }
 
   /* ---- speech ------------------------------------------------------------ */
 
@@ -138,6 +227,9 @@ window.Sound = (function () {
     if (muted && window.speechSynthesis) {
       try { window.speechSynthesis.cancel(); } catch (err) { /* ignore */ }
     }
+    /* The master switch really is master: 🔇 takes the tune with it, and
+       unmuting brings it back only if its own switch was left on. */
+    if (muted) stopMusic(); else startMusic();
     return muted;
   }
 
@@ -145,6 +237,7 @@ window.Sound = (function () {
 
   return {
     unlock, setMuted, isMuted,
+    setMusicOn, isMusicOn, setMood, startMusic, stopMusic,
     correct, wrong, pop, levelClear, regionClear,
     speak, speakProblem, praise, encourage
   };

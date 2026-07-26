@@ -14,6 +14,9 @@ global.window = global;
 [
   'js/facts.js',
   'js/progress.js',
+  /* Pure arithmetic and pure string building — no DOM, no browser APIs. */
+  'js/score.js',
+  'js/share.js',
   /* character.js only touches the DOM through the markup string it returns. */
   'js/character.js',
   /* The three new mechanics only touch the DOM inside show(); their
