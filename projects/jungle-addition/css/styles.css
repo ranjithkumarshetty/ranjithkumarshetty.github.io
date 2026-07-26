@@ -498,10 +498,44 @@ h1 span { display: block; color: var(--lime); text-shadow: 0 4px 0 #1c6b3f; }
 .game-host > :first-child { margin-block-start: auto; }
 .game-host > :last-child  { margin-block-end: auto; }
 
+/* ---- swap this question --------------------------------------------------- */
+
+/* Below the board, not in the level bar: the offer has to be readable to be
+   understood, and the bar is already full of round icons whose meaning a
+   five-year-old has to be told. It says how many are left because "one per
+   stop" is only a rule if he can see it running out. */
+.swap-bar {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+
+.swap-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 0 22px;
+  border-radius: 32px;
+  background: rgba(255, 253, 245, .14);
+  color: var(--cream);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.swap-btn:active { background: rgba(255, 253, 245, .28); }
+
+/* Spent, not gone: the button stays put so the rule stays visible. */
+.swap-btn[disabled] { opacity: .45; }
+
 /* A short landscape window: shrink the decoration, never the board. */
 @media (max-height: 560px) {
   .level-cub { height: 54px; }
   .rescue-scene { height: 68px; }
+  /* The pill keeps its 64px: a smaller tap target is the one thing a short
+     window is not allowed to buy back. */
+  .swap-bar { padding-bottom: 6px; }
 }
 
 /* ---- prompt --------------------------------------------------------------- */

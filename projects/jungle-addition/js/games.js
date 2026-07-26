@@ -15,6 +15,11 @@ window.Games = (function () {
   const ADVANCE_AFTER_CORRECT = 950;
   const ADVANCE_AFTER_REVEAL = 2100;
 
+  /* One "not this one" per stop. Enough to walk away from a question that has
+     gone sour, few enough that it stays a choice rather than a way of skipping
+     every sum he does not fancy. */
+  const SWAPS_PER_STOP = 1;
+
   let active = null;   // the running session, or null between levels
 
   /* ---- session lifecycle --------------------------------------------------- */
@@ -30,6 +35,9 @@ window.Games = (function () {
       attempts: 0,
       typed: '',
       stepsDone: 0,
+      swapsLeft: SWAPS_PER_STOP,
+      resolved: false,     // true between a right answer and the next question
+      matched: {},         // match only: pairs already cleared on this board
       timers: []
     };
 
@@ -60,6 +68,7 @@ window.Games = (function () {
   /* Every completed question — right or revealed — advances one step. */
   function completeQuestion(problem, missedFirstTry, delay) {
     active.stepsDone += 1;
+    active.resolved = true;
     hook('onQuestionDone', problem, missedFirstTry, active.stepsDone);
 
     const finished = active.stepsDone >= active.problems.length;
@@ -70,6 +79,7 @@ window.Games = (function () {
         if (hooks.onComplete) hooks.onComplete();
       } else if (active.stop.game === 'match') {
         /* match handles its own board transitions */
+        active.resolved = false;
       } else {
         active.index += 1;
         active.attempts = 0;
@@ -102,6 +112,7 @@ window.Games = (function () {
          every pending animation, and only stop() knows when that happens. */
       defer: (fn, delay) => later(fn, delay)
     });
+    active.resolved = false;
     hook('onQuestionShown', problem, active.index);
   }
 
@@ -213,13 +224,17 @@ window.Games = (function () {
     const problem = active.problems[active.index];
     const game = active.stop.game;
     active.typed = '';
+    active.resolved = false;
     active.target = targetOf(problem, game);
 
     /* facts.js builds options around the total, which is the wrong quantity
        for Missing Number — rebuild them around the hidden addend. */
-    const options = game === 'missing'
-      ? Facts.buildOptions(active.target)
-      : problem.options;
+    const options = Verify.fixChoices(
+      game === 'missing' ? Facts.buildOptions(active.target) : problem.options,
+      active.target);
+
+    Verify.report(`stop ${active.stop.id} question ${active.index + 1}`,
+      Verify.question(problem, game).concat(Verify.choices(options, active.target)));
 
     active.host.innerHTML = `
       <div class="prompt">
@@ -321,6 +336,10 @@ window.Games = (function () {
 
     active.matchAttempts = {};
     active.selected = null;
+    active.resolved = false;
+
+    Verify.report(`stop ${active.stop.id} match board ${boardIndex + 1}`,
+      Verify.matchBoard(pairs));
 
     const expressions = shuffled(pairs.map((p, i) => ({ pair: p, id: `${boardIndex}-${i}` })));
     const results = shuffled(pairs.map((p, i) => ({ pair: p, id: `${boardIndex}-${i}` })));
@@ -330,15 +349,11 @@ window.Games = (function () {
       <div class="match-board">
         <div class="match-col">
           ${expressions.map(item =>
-            `<button class="card card-expr" type="button" data-id="${item.id}" data-kind="expr">
-               ${item.pair.addends.join(' + ')}
-             </button>`).join('')}
+            cardMarkup(item, 'expr', item.pair.addends.join(' + '))).join('')}
         </div>
         <div class="match-col">
           ${results.map(item =>
-            `<button class="card card-result" type="button" data-id="${item.id}" data-kind="result">
-               ${item.pair.answer}
-             </button>`).join('')}
+            cardMarkup(item, 'result', item.pair.answer)).join('')}
         </div>
       </div>`;
 
@@ -348,6 +363,17 @@ window.Games = (function () {
 
     Sound.speak('Match the sums!');
     hook('onQuestionShown', pairs[0], active.index);
+  }
+
+  /* A swap redraws the board mid-play, so pairs already cleared have to come
+     back cleared — losing them would hand back progress he has already made. */
+  function cardMarkup(item, kind, face) {
+    const done = active.matched[item.id];
+    return `
+      <button class="card card-${kind}${done ? ' matched' : ''}" type="button"
+              data-id="${item.id}" data-kind="${kind}"${done ? ' disabled' : ''}>
+        ${face}
+      </button>`;
   }
 
   function shuffled(list) {
@@ -395,6 +421,7 @@ window.Games = (function () {
       card.classList.add('matched');
       card.disabled = true;
     });
+    active.matched[expression.dataset.id] = true;
 
     Sound.correct();
     Sound.praise();
@@ -483,5 +510,64 @@ window.Games = (function () {
     }
   }
 
-  return { play, stop };
+  /* ---- swapping a question -------------------------------------------------
+     "I do not want this one" is a fair thing for a five-year-old to feel, and
+     letting him act on it beats letting him stall. The swap costs nothing —
+     no step, no mistake, no score — it simply deals a different sum. */
+
+  function swapsLeft() {
+    return active ? active.swapsLeft : 0;
+  }
+
+  function canSwap() {
+    return !!active && active.swapsLeft > 0 && !active.resolved;
+  }
+
+  function swapQuestion() {
+    if (!canSwap()) return false;
+
+    active.swapsLeft -= 1;
+    active.attempts = 0;
+
+    if (active.stop.game === 'match') {
+      swapMatchBoard();
+    } else {
+      active.problems[active.index] = replacementFor(active.index);
+      if (isDelegated(active.stop.game)) showDelegated();
+      else showBubbleQuestion();
+    }
+
+    Sound.pop();
+    hook('onSwap', swapsLeft());
+    return true;
+  }
+
+  /* Fresh, and still obeying the rules the stop was dealt under: no fact he has
+     already met here, and — where the mechanic needs unique totals — no sum
+     that clashes with the questions still on the board. */
+  function replacementFor(index) {
+    const distinct = Facts.needsDistinctAnswers(active.stop.game);
+    return Facts.replacement(active.stop.id, {
+      keys: active.problems.map(p => p.key),
+      answers: distinct
+        ? active.problems.filter((p, i) => i !== index).map(p => p.answer)
+        : []
+    });
+  }
+
+  /* On a match board the question is the whole board, so what changes is every
+     pair still on the table; the ones already matched stay matched. */
+  function swapMatchBoard() {
+    const boardIndex = Math.floor(active.stepsDone / 3);
+
+    for (let slot = 0; slot < 3; slot++) {
+      const index = boardIndex * 3 + slot;
+      if (index >= active.problems.length) break;
+      if (active.matched[`${boardIndex}-${slot}`]) continue;
+      active.problems[index] = replacementFor(index);
+    }
+    showMatchBoard();
+  }
+
+  return { play, stop, swapQuestion, swapsLeft };
 })();

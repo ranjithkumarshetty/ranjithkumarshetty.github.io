@@ -13,7 +13,9 @@ window.Route = (function () {
   function show(api) {
     const { host, stop, problem, index, total } = api;
     const target = problem.answer;
-    const values = shuffle([target].concat(distractorsFor(stop, problem)));
+    const stones = stonesFor(stop, problem);
+
+    Verify.report(`stop ${stop.id} route fork`, Verify.routeStones(stones, target));
 
     host.innerHTML = `
       <section class="route" data-target="${target}">
@@ -22,8 +24,7 @@ window.Route = (function () {
           <span class="sign-text">Cross to <strong>${target}</strong></span>
         </div>
         <div class="route-stones">
-          ${values.map(value =>
-            stoneMarkup(value, target, value === target ? problem.addends : null)).join('')}
+          ${stones.map(stone => stoneMarkup(stone, target)).join('')}
         </div>
         <div class="route-chest">
           <span class="chest">🧰</span>
@@ -39,14 +40,25 @@ window.Route = (function () {
     });
   }
 
-  /* Every stone shows its two addends, so reading it is the addition. The
+  /* The fork as data: each stone is a value and the split printed on it. The
      winning stone is given the problem's own split rather than a fresh one, so
      the fact he practises here is the fact recorded against him. */
-  function stoneMarkup(value, target, addends) {
-    const parts = addends || Facts.decompose(value);
+  function stonesFor(stop, problem) {
+    const target = problem.answer;
+    const stones = [{ value: target, addends: problem.addends }].concat(
+      distractorsFor(stop, problem).map(value => ({
+        value: value,
+        addends: Facts.decompose(value)
+      })));
+    return shuffle(stones);
+  }
+
+  /* Every stone shows its two addends, so reading it is the addition. */
+  function stoneMarkup(stone, target) {
+    const parts = stone.addends;
     return `
-      <button class="stone" type="button" data-value="${value}"
-              data-correct="${value === target}"
+      <button class="stone" type="button" data-value="${stone.value}"
+              data-correct="${stone.value === target}"
               aria-label="${parts.join(' plus ')}">
         <span class="stone-face">${STONE_EMOJI}</span>
         <span class="stone-expr">${parts.join(' + ')}</span>
@@ -131,5 +143,5 @@ window.Route = (function () {
     return out;
   }
 
-  return { show, distractorsFor };
+  return { show, stonesFor, distractorsFor };
 })();

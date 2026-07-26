@@ -18,6 +18,8 @@ window.Build = (function () {
     const values = treeFor(stop, problem);
     picked = [];
 
+    Verify.report(`stop ${stop.id} fruit tree`, Verify.buildTree(values, problem.answer, pick));
+
     host.innerHTML = `
       <section class="build" data-target="${problem.answer}" data-pick="${pick}">
         <div class="build-goal">

@@ -271,26 +271,59 @@ window.Facts = (function () {
 
   /* ---- public ------------------------------------------------------------ */
 
+  /* Match boards must not show two cards with the same sum. Route forks read
+     their wrong stones off `options`, so distinct targets keep a stop from
+     asking for the same total twice in a row. */
+  function needsDistinctAnswers(game) {
+    return ['match', 'route'].includes(game);
+  }
+
+  /* The one place a question is assembled, so it is also the one place the
+     arithmetic is signed off before anything downstream can draw it. */
+  function problemFrom(addends, rng) {
+    const total = sum(addends);
+    const built = {
+      addends: shuffle(addends, rng),     // presentation order varies, key does not
+      answer: total,
+      key: factKey(addends),
+      options: buildOptions(total, rng)
+    };
+    built.options = Verify.fixChoices(built.options, total);
+    Verify.report('fact ' + built.key, Verify.question(built));
+    return built;
+  }
+
   function generateStop(stopId, missCounts, rng) {
     rng = rng || Math.random;
     missCounts = missCounts || {};
     const config = stop(stopId);
-
-    /* Match boards must not show two cards with the same sum. Route forks read
-       their wrong stones off `options`, so distinct targets keep a stop from
-       asking for the same total twice in a row. */
-    const needsDistinctAnswers = ['match', 'route'].includes(config.game);
-    const isAcceptable = needsDistinctAnswers
+    const isAcceptable = needsDistinctAnswers(config.game)
       ? (fact, chosen) => !chosen.some(c => sum(c) === sum(fact))
       : () => true;
 
     return sampleFacts(poolForStop(stopId), QUESTIONS_PER_STOP, missCounts, rng, isAcceptable)
-      .map(addends => ({
-        addends: shuffle(addends, rng),   // presentation order varies, key does not
-        answer: sum(addends),
-        key: factKey(addends),
-        options: buildOptions(sum(addends), rng)
-      }));
+      .map(addends => problemFrom(addends, rng));
+  }
+
+  /* One fresh question from the same stop, for the swap button. `avoid.keys`
+     are the facts already on this run and `avoid.answers` the totals that must
+     stay unique; each is relaxed in turn rather than returning nothing, because
+     a swap that does nothing is worse than a swap that repeats a sum. */
+  function replacement(stopId, avoid, rng) {
+    rng = rng || Math.random;
+    avoid = avoid || {};
+    const keys = avoid.keys || [];
+    const answers = avoid.answers || [];
+    const pool = poolForStop(stopId);
+
+    const unseen = pool.filter(addends =>
+      keys.indexOf(factKey(addends)) === -1 && answers.indexOf(sum(addends)) === -1);
+    const distinct = unseen.length
+      ? unseen
+      : pool.filter(addends => answers.indexOf(sum(addends)) === -1);
+    const usable = distinct.length ? distinct : pool;
+
+    return problemFrom(usable[Math.floor(rng() * usable.length)], rng);
   }
 
   return {
@@ -306,6 +339,8 @@ window.Facts = (function () {
     decompose,
     buildOptions,
     generateStop,
+    needsDistinctAnswers,
+    replacement,
     setDifficulty,
     getDifficulty,
     isHardProblem
