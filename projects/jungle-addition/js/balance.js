@@ -33,6 +33,11 @@ window.Balance = (function () {
        pan, not the left, so that is the one worth recording against him. */
     if (preload) problem.key = Facts.factKey([preload, needed]);
 
+    const weights = weightsFor(problem, needed);
+    Verify.report(`stop ${stop.id} scale`,
+      Verify.balanceRow(weights, needed, preload, problem.answer)
+        .concat(Verify.question(problem)));
+
     host.innerHTML = `
       <section class="balance" data-target="${problem.answer}"
                data-preload="${preload}" data-needed="${needed}"
@@ -50,7 +55,7 @@ window.Balance = (function () {
         </div>
         <p class="balance-ask">Make both sides the same. Step ${index + 1} of ${total}</p>
         <div class="weight-row">
-          ${weightsFor(problem, needed).map(weightMarkup).join('')}
+          ${weights.map(weightMarkup).join('')}
         </div>
         <div class="hint-area balance-hint" hidden></div>
       </section>`;

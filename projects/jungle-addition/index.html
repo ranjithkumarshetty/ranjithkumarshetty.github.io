@@ -107,6 +107,12 @@
     <div id="level-cub" class="level-cub" aria-hidden="true"></div>
     <div id="rescue-strip" class="rescue-strip" hidden></div>
     <main id="game-host" class="game-host"></main>
+    <div class="swap-bar">
+      <button id="btn-swap" class="swap-btn" type="button">
+        <span aria-hidden="true">🔄</span>
+        <span id="swap-label">Swap this question — 1 left</span>
+      </button>
+    </div>
   </section>
 
   <!-- Overlays ------------------------------------------------------------ -->
@@ -175,6 +181,7 @@
   <div id="balloons" class="effect-layer" aria-hidden="true"></div>
 
   <!-- Load order matters: plain scripts, no modules, so file:// just works. -->
+  <script src="js/verify.js"></script>
   <script src="js/facts.js"></script>
   <script src="js/progress.js"></script>
   <script src="js/score.js"></script>

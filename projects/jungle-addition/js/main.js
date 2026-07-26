@@ -67,6 +67,8 @@ window.Main = (function () {
       pips: byId('level-pips'),
       levelCub: byId('level-cub'),
       gameHost: byId('game-host'),
+      swapButton: byId('btn-swap'),
+      swapLabel: byId('swap-label'),
 
       overlayClear: byId('overlay-clear'),
       clearTitle: byId('clear-title'),
@@ -113,6 +115,7 @@ window.Main = (function () {
     });
 
     el.backButton.addEventListener('click', leaveLevel);
+    el.swapButton.addEventListener('click', swapQuestion);
     el.muteButton.addEventListener('click', toggleMute);
     el.musicButton.addEventListener('click', toggleMusic);
     el.clearShare.addEventListener('click', shareLevel);
@@ -249,9 +252,30 @@ window.Main = (function () {
         onCorrect: handleCorrect,
         onWrong: handleWrong,
         onQuestionDone: handleQuestionDone,
+        onSwap: syncSwapButton,
         onComplete: finishLevel
       }
     });
+
+    syncSwapButton();
+  }
+
+  /* Swapping is free by design: no step taken, no mistake logged, and the clock
+     for the speed bonus restarts with the new question via onQuestionShown.
+     The new question reads itself out, so nothing is said about the swap. */
+  function swapQuestion() {
+    Games.swapQuestion();
+  }
+
+  function syncSwapButton() {
+    const left = Games.swapsLeft();
+    el.swapButton.disabled = left === 0;
+    el.swapLabel.textContent = left
+      ? `Swap this question — ${left} left`
+      : 'Swap used for this stop';
+    el.swapButton.setAttribute('aria-label', left
+      ? `Swap this question for a different one. ${left} swap left at this stop.`
+      : 'No swaps left at this stop');
   }
 
   function renderPips(done) {

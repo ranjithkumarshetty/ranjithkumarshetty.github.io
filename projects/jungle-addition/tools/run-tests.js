@@ -12,6 +12,8 @@ const ROOT = path.join(__dirname, '..');
 global.window = global;
 
 [
+  /* First: facts.js signs every question off through it as it is built. */
+  'js/verify.js',
   'js/facts.js',
   'js/progress.js',
   /* Pure arithmetic and pure string building — no DOM, no browser APIs. */

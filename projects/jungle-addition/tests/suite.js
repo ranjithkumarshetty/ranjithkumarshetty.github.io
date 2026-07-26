@@ -669,6 +669,194 @@
       eq(Progress.addScore(-100), 0, 'points can be taken off, but never past zero');
       eq(Progress.get().score, 0);
     });
+
+    /* ---- verify.js -------------------------------------------------------- */
+
+    test('a question is passed only when its arithmetic actually holds', () => {
+      eq(Verify.question({ addends: [3, 4], answer: 7 }), []);
+      ok(Verify.question({ addends: [3, 4], answer: 8 }).length, 'a wrong total is caught');
+      ok(Verify.question({ addends: [3], answer: 3 }).length, 'one addend is not a sum');
+      ok(Verify.question({ addends: [1.5, 1.5], answer: 3 }).length, 'halves are not counts');
+      ok(Verify.question({ addends: [14, 12], answer: 26 }).length, 'off the number line');
+    });
+
+    /* The equation for Missing Number prints one addend, a blank and the total,
+       so a third addend would vanish from the screen while still counting
+       towards the sum — the blank would then have no right answer. */
+    test('a missing-number question may only ever have two addends', () => {
+      eq(Verify.question({ addends: [2, 3, 4], answer: 9 }, 'missing').length, 1);
+      eq(Verify.question({ addends: [2, 3, 4], answer: 9 }, 'critters'), []);
+    });
+
+    test('a set of choices must hold the answer once, and once only', () => {
+      eq(Verify.choices([4, 7, 9, 2], 7), []);
+      ok(Verify.choices([4, 8, 9, 2], 7).length, 'the answer is missing');
+      ok(Verify.choices([7, 7, 9, 2], 7).length, 'the answer is on two buttons');
+      ok(Verify.choices([4, 4, 7, 2], 7).length, 'a wrong answer is on two buttons');
+      ok(Verify.choices([], 7).length, 'nothing to tap');
+    });
+
+    test('a broken choice list is repaired, a sound one is left exactly as it was', () => {
+      const sound = [4, 7, 9, 2];
+      ok(Verify.fixChoices(sound, 7) === sound, 'same array, same shuffled order');
+
+      const fixed = Verify.fixChoices([4, 8, 9, 2], 7);
+      eq(fixed.length, 4, 'still four buttons');
+      eq(Verify.choices(fixed, 7), [], 'and now solvable');
+      ok(fixed[0] !== 7, 'the answer is not parked in the first slot');
+    });
+
+    test('every stone on a fork carries the sum it claims to', () => {
+      eq(Verify.routeStones([
+        { value: 7, addends: [3, 4] },
+        { value: 5, addends: [1, 4] }
+      ], 7), []);
+      ok(Verify.routeStones([
+        { value: 7, addends: [3, 4] },
+        { value: 5, addends: [1, 3] }
+      ], 7).length, 'a stone labelled with the wrong split is caught');
+    });
+
+    test('a fruit tree has to be fillable, and no single fruit may already be it', () => {
+      eq(Verify.buildTree([2, 5, 1, 3, 4, 6], 7, 2), []);
+      eq(Verify.buildTree([4, 4, 1, 2, 3, 5], 8, 2), [], 'doubles need two of the same fruit');
+      ok(Verify.buildTree([1, 2, 3, 4, 5, 6], 7, 3).length === 0);
+      ok(Verify.buildTree([1, 1, 1, 2, 2, 2], 9, 2).length, 'no two of these make nine');
+      ok(Verify.buildTree([7, 1, 2, 3, 4, 5], 7, 2).length, 'a fruit worth the whole total');
+    });
+
+    test('a scale is only fair when both pans can be made to meet', () => {
+      eq(Verify.balanceRow([3, 4, 5, 6], 5, 0, 5), []);
+      eq(Verify.balanceRow([3, 4, 5, 6], 5, 4, 9), [], 'a compound stop preloads a pan');
+      ok(Verify.balanceRow([3, 4, 6, 7], 5, 0, 5).length, 'the weight is not in the row');
+      ok(Verify.balanceRow([3, 4, 5, 6], 5, 4, 8).length, 'the pans cannot be squared');
+      ok(Verify.balanceRow([0, 1, 2, 3], 0, 5, 5).length, 'nothing left to add');
+    });
+
+    test('a match board may not show the same total twice', () => {
+      eq(Verify.matchBoard([
+        { addends: [1, 2], answer: 3 },
+        { addends: [2, 2], answer: 4 }
+      ]), []);
+      ok(Verify.matchBoard([
+        { addends: [1, 2], answer: 3 },
+        { addends: [0, 3], answer: 3 }
+      ]).length, 'two cards both make three');
+    });
+
+    test('report says yes to a clean board and no to a faulty one', () => {
+      ok(Verify.report('nowhere', []) === true);
+      const said = [];
+      const wasReport = window.reportProblem, wasWarn = console.warn;
+      window.reportProblem = message => said.push(message);
+      console.warn = () => {};        // the fault is deliberate; do not shout about it
+      try {
+        ok(Verify.report('stop 1', ['1+1 makes 2, not 3']) === false);
+      } finally {
+        window.reportProblem = wasReport;
+        console.warn = wasWarn;
+      }
+      eq(said.length, 1, 'the grown-up is told, loudly');
+      ok(said[0].indexOf('stop 1') !== -1 && said[0].indexOf('not 3') !== -1,
+        'and told where and what');
+    });
+
+    /* The whole point of the referee: nothing the roster can deal may fail it. */
+    test('every question the roster can deal passes its own checks', () => {
+      Facts.DIFFICULTIES.forEach(level => {
+        atDifficulty(level, () => {
+          Facts.STOPS.forEach(stop => {
+            const config = Facts.stop(stop.id);
+            for (let run = 0; run < 8; run++) {
+              const problems = Facts.generateStop(stop.id, {}, seeded(run * 13 + stop.id));
+              problems.forEach(p => {
+                eq(Verify.question(p, config.game), [],
+                  `${level} stop ${stop.id}: ${p.addends.join('+')}=${p.answer}`);
+                eq(Verify.choices(p.options, p.answer), [],
+                  `${level} stop ${stop.id} options ${p.options} for ${p.answer}`);
+              });
+              if (config.game === 'match') {
+                eq(Verify.matchBoard(problems.slice(0, 3)), [], `${level} stop ${stop.id} board 1`);
+                eq(Verify.matchBoard(problems.slice(3, 6)), [], `${level} stop ${stop.id} board 2`);
+              }
+            }
+          });
+        });
+      });
+    });
+
+    test('every board the three drawn mechanics build passes its own checks', () => {
+      Facts.DIFFICULTIES.forEach(level => {
+        atDifficulty(level, () => {
+          Facts.STOPS.forEach(stop => {
+            const config = Facts.stop(stop.id);
+            if (!['route', 'build', 'balance'].includes(config.game)) return;
+
+            for (let run = 0; run < 8; run++) {
+              Facts.generateStop(stop.id, {}, seeded(run * 3 + stop.id)).forEach(p => {
+                const where = `${level} stop ${stop.id} for ${p.addends.join('+')}`;
+                if (config.game === 'route') {
+                  eq(Verify.routeStones(Route.stonesFor(config, p), p.answer), [], where);
+                } else if (config.game === 'build') {
+                  const pick = config.pick || 2;
+                  eq(Verify.buildTree(Build.treeFor(config, p), p.answer, pick), [], where);
+                } else {
+                  const preload = config.compound ? Balance.preloadFor(p) : 0;
+                  const needed = p.answer - preload;
+                  eq(Verify.balanceRow(Balance.weightsFor(p, needed), needed, preload, p.answer),
+                    [], where);
+                }
+              });
+            }
+          });
+        });
+      });
+    });
+
+    /* ---- swapping a question ---------------------------------------------- */
+
+    test('a swap deals a sound question from the same stop', () => {
+      Facts.STOPS.forEach(stop => {
+        const config = Facts.stop(stop.id);
+        const pool = Facts.poolForStop(stop.id).map(Facts.factKey);
+        for (let run = 0; run < 5; run++) {
+          const fresh = Facts.replacement(stop.id, {}, seeded(run * 5 + stop.id));
+          eq(Verify.question(fresh, config.game), [], `stop ${stop.id} swap`);
+          ok(pool.indexOf(fresh.key) !== -1, `stop ${stop.id} swapped outside its own pool`);
+        }
+      });
+    });
+
+    test('a swap avoids the facts and totals already on the board', () => {
+      const asked = Facts.generateStop(4, {}, seeded(99));
+      const keys = asked.map(p => p.key);
+      const answers = asked.map(p => p.answer);
+
+      for (let run = 0; run < 20; run++) {
+        const fresh = Facts.replacement(4, { keys, answers }, seeded(run * 31 + 7));
+        ok(keys.indexOf(fresh.key) === -1, `swapped back to ${fresh.key}`);
+        ok(answers.indexOf(fresh.answer) === -1, `swapped to a repeated total ${fresh.answer}`);
+      }
+    });
+
+    /* A pool can genuinely run out of unseen facts. Handing back nothing would
+       leave the child staring at the question he asked to be rid of, so the
+       rules are relaxed in turn instead. */
+    test('a swap still deals something when every fact has been seen', () => {
+      const everything = Facts.poolForStop(1);
+      const fresh = Facts.replacement(1, {
+        keys: everything.map(Facts.factKey),
+        answers: everything.map(f => f.reduce((a, b) => a + b, 0))
+      }, seeded(3));
+      eq(Verify.question(fresh), [], 'and what it deals is still a real sum');
+    });
+
+    test('only route and match need their totals to stay unique', () => {
+      eq(Facts.needsDistinctAnswers('match'), true);
+      eq(Facts.needsDistinctAnswers('route'), true);
+      eq(Facts.needsDistinctAnswers('critters'), false);
+      eq(Facts.needsDistinctAnswers('build'), false);
+    });
   };
 
   /* Run `fn` with the difficulty dial turned, then always turn it back. */
