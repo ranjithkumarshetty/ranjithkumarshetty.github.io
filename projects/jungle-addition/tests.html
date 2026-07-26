@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Jungle Addition — Logic Tests</title>
+<style>
+  body { font: 15px/1.5 ui-monospace, Menlo, Consolas, monospace; margin: 2rem auto; max-width: 60rem; padding: 0 1rem; }
+  h1 { font-size: 1.3rem; }
+  .case { padding: .35rem .6rem; border-left: 4px solid #ccc; margin: .2rem 0; }
+  .pass { border-color: #2fa96b; background: #f2fbf7; }
+  .fail { border-color: #e2483d; background: #fdf2f1; }
+  .fail .why { color: #b3271d; display: block; padding-left: 1.5rem; }
+  #summary { font-size: 1.1rem; font-weight: 700; margin: 1rem 0; padding: .6rem .8rem; border-radius: 6px; }
+  #summary.ok { background: #2fa96b; color: #fff; }
+  #summary.bad { background: #e2483d; color: #fff; }
+</style>
+</head>
+<body>
+<h1>Jungle Addition — Logic Tests</h1>
+<div id="summary">running…</div>
+<div id="out"></div>
+
+<!-- Only the modules with no DOM dependency. The tests themselves live in
+     tests/suite.js so `node tools/run-tests.js` runs the very same ones. -->
+<script src="js/facts.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/character.js"></script>
+<script src="js/route.js"></script>
+<script src="js/build.js"></script>
+<script src="js/balance.js"></script>
+<script src="js/badges.js"></script>
+<script src="tests/suite.js"></script>
+<script>
+/* ---- tiny assert harness ------------------------------------------------ */
+(function () {
+  'use strict';
+  const out = document.getElementById('out');
+  let passed = 0, failed = 0;
+
+  function test(name, fn) {
+    try {
+      fn();
+      passed++;
+      out.insertAdjacentHTML('beforeend', `<div class="case pass">✔ ${name}</div>`);
+    } catch (err) {
+      failed++;
+      out.insertAdjacentHTML('beforeend',
+        `<div class="case fail">✘ ${name}<span class="why">${err.message}</span></div>`);
+    }
+  }
+  function ok(cond, msg) { if (!cond) throw new Error(msg || 'expected truthy'); }
+  function eq(actual, expected, msg) {
+    const a = JSON.stringify(actual), e = JSON.stringify(expected);
+    if (a !== e) throw new Error(`${msg ? msg + ': ' : ''}expected ${e}, got ${a}`);
+  }
+
+  TestSuite({ test, ok, eq });
+
+  /* ---- summary ---------------------------------------------------------- */
+  const summary = document.getElementById('summary');
+  summary.textContent = failed === 0
+    ? `All ${passed} tests passed 🎉`
+    : `${failed} failed, ${passed} passed`;
+  summary.className = failed === 0 ? 'ok' : 'bad';
+
+  // Leave real progress untouched after a test run.
+  Progress.__test.useStorage(null);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Jungle Addition Adventure</title>
+  <meta name="description" content="A jungle-trail addition game for young children: twenty stops, five ways to play, no accounts and nothing sent anywhere.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Jungle Addition Adventure">
+  <meta property="og:description" content="A jungle-trail addition game for young children: twenty stops, five ways to play, no accounts and nothing sent anywhere.">
+  <meta property="og:url" content="https://ranjithkumarshetty.github.io/projects/jungle-addition/">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐯</text></svg>">
+
+  <!-- Runs before anything else: marks that scripts execute at all, and puts any
+       load-time failure on the screen. Silent breakage is impossible to debug on
+       a tablet with no console. -->
+  <script>
+    document.documentElement.className += ' js';
+
+    window.reportProblem = function (message) {
+      var banner = document.getElementById('boot-problem');
+      if (!banner) {
+        banner = document.createElement('pre');
+        banner.id = 'boot-problem';
+        banner.className = 'boot-problem';
+        (document.body || document.documentElement).appendChild(banner);
+      }
+      banner.textContent += message + '\n';
+    };
+
+    window.addEventListener('error', function (event) {
+      var where = (event.filename || '').split('/').pop();
+      window.reportProblem(event.message + (where ? ' — ' + where + ':' + event.lineno : ''));
+    });
+
+    window.addEventListener('load', function () {
+      if (!window.Main) window.reportProblem('scripts did not finish loading');
+    });
+  </script>
+</head>
+<body>
+
+  <!-- Screens ------------------------------------------------------------- -->
+
+  <section id="screen-start" class="screen active">
+    <div class="start-card">
+      <div class="start-vines" aria-hidden="true">🌿🍃🌿🍃🌿</div>
+      <h1>Jungle Addition<span>Adventure</span></h1>
+      <p class="start-blurb">Add your way up the trail and collect animal friends!</p>
+      <button id="btn-start" class="big-button" type="button">Start the adventure 🌿</button>
+      <p id="no-js" class="no-js-note">
+        ⚠️ This viewer has JavaScript switched off, so the game cannot run here.
+        Open the file in Safari instead.
+      </p>
+    </div>
+    <!-- Hosted, this page is reachable from a shared link with no other way out.
+         Absolute rather than relative so the AirDropped single file, which has no
+         parent directory to climb to, still points somewhere real. -->
+    <a class="start-home" href="https://ranjithkumarshetty.github.io/">Made by Ranjith Kumar Shetty</a>
+  </section>
+
+  <section id="screen-map" class="screen">
+    <header class="map-header">
+      <button id="btn-profile" class="profile-chip" type="button"
+              aria-label="Open your explorer card">
+        <span id="profile-chip-cub" class="chip-cub" aria-hidden="true"></span>
+        <span class="chip-text">
+          <strong id="stage-label" class="stage-label">Cub</strong>
+          <span id="chip-counts" class="chip-counts"></span>
+        </span>
+        <span class="chip-more" aria-hidden="true">›</span>
+      </button>
+      <div id="parade" class="parade" aria-label="0 animal friends"></div>
+    </header>
+    <div class="trail-frame">
+      <svg id="trail" class="trail-svg" viewBox="0 0 100 563" preserveAspectRatio="xMidYMin meet"
+           role="group" aria-label="Jungle trail with twenty stops"></svg>
+    </div>
+  </section>
+
+  <section id="screen-profile" class="screen">
+    <header class="level-bar">
+      <button id="btn-profile-back" class="icon-btn" type="button" aria-label="Back to the map">←</button>
+      <div class="level-title">
+        <span class="level-stop">Explorer card</span>
+        <span class="level-name">Everything you have won</span>
+      </div>
+    </header>
+    <main id="profile-body" class="profile-body"></main>
+  </section>
+
+  <section id="screen-level" class="screen">
+    <header class="level-bar">
+      <button id="btn-back" class="icon-btn" type="button" aria-label="Back to the map">←</button>
+      <div class="level-title">
+        <span id="level-stop" class="level-stop">Stop 1</span>
+        <span id="level-name" class="level-name">Riverbank Steps</span>
+      </div>
+      <div id="level-pips" class="pips" aria-label="Progress through this stop"></div>
+    </header>
+    <div id="level-cub" class="level-cub" aria-hidden="true"></div>
+    <div id="rescue-strip" class="rescue-strip" hidden></div>
+    <main id="game-host" class="game-host"></main>
+  </section>
+
+  <!-- Overlays ------------------------------------------------------------ -->
+
+  <div id="overlay-clear" class="overlay">
+    <div class="overlay-card">
+      <h2 id="clear-title">Stop cleared!</h2>
+      <div id="clear-friend" class="clear-friend">🦜</div>
+      <div id="clear-stars" class="clear-stars">⭐⭐⭐</div>
+      <p id="clear-note" class="clear-note">A new friend joined your parade!</p>
+      <div class="overlay-buttons">
+        <button id="btn-clear-next" class="big-button" type="button">Next stop →</button>
+        <button id="btn-clear-map" class="ghost-button" type="button">Back to the map</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay-region" class="overlay overlay-big">
+    <div class="overlay-card">
+      <h2 id="region-title">Riverbank conquered!</h2>
+      <div id="region-cub" class="region-cub"></div>
+      <p id="region-note" class="clear-note">You are now an Explorer!</p>
+      <div class="overlay-buttons">
+        <button id="btn-region-onward" class="big-button" type="button">Onward! 🎉</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay-grownup" class="overlay">
+    <div class="overlay-card grownup-card">
+      <h2>Grown-up corner</h2>
+      <div id="grownup-stats" class="grownup-stats"></div>
+      <div id="grownup-facts" class="grownup-facts"></div>
+      <div class="grownup-save">
+        <h3>Keep a copy</h3>
+        <p>Progress lives in this browser only, and Safari clears it after about
+           a week away. Save a file now and you can pour it back in later, or onto
+           another device.</p>
+        <div class="save-row">
+          <button id="btn-grownup-save" class="ghost-button" type="button">Save a copy</button>
+          <label class="ghost-button" for="input-grownup-restore">Restore a copy</label>
+          <input id="input-grownup-restore" class="visually-hidden" type="file" accept="application/json,.json">
+        </div>
+        <p id="grownup-save-note" class="save-note" role="status" aria-live="polite"></p>
+      </div>
+      <div class="overlay-buttons">
+        <button id="btn-grownup-close" class="big-button" type="button">Done</button>
+        <button id="btn-grownup-reset" class="ghost-button danger" type="button">Reset progress</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Persistent chrome and effect layers --------------------------------- -->
+
+  <button id="btn-mute" class="corner-button mute" type="button" aria-label="Turn sound off">🔊</button>
+  <button id="grownup-leaf" class="corner-button leaf" type="button"
+          aria-label="Grown-up corner — press and hold">🍃</button>
+
+  <div id="badge-pop" class="badge-pop" role="status" aria-live="polite" hidden></div>
+
+  <canvas id="confetti" class="effect-layer" aria-hidden="true"></canvas>
+  <div id="balloons" class="effect-layer" aria-hidden="true"></div>
+
+  <!-- Load order matters: plain scripts, no modules, so file:// just works. -->
+  <script src="js/facts.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/character.js"></script>
+  <script src="js/celebrate.js"></script>
+  <script src="js/badges.js"></script>
+  <script src="js/route.js"></script>
+  <script src="js/build.js"></script>
+  <script src="js/balance.js"></script>
+  <script src="js/rescue.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,1 +1,12 @@
 .DS_Store
+
+# Build artifact: tools/bundle.js writes this single-file copy of the game into
+# the project directory. It is generated from the sources beside it, so keeping
+# it out avoids publishing a 150 KB duplicate that silently goes stale.
+projects/*/jungle-addition.html
+
+# Agent and editor configuration is local to a machine, never part of the site.
+.claude/
+CLAUDE.md
+.vscode/
+.idea/
