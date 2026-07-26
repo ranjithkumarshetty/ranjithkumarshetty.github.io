@@ -9,6 +9,7 @@ window.Main = (function () {
 
   const el = {};
   let level = null;          // the level in progress, or null on the map
+  let lastRun = null;        // the stop just cleared, kept for the share button
 
   /* ---- boot ---------------------------------------------------------------- */
 
@@ -27,6 +28,7 @@ window.Main = (function () {
       Celebrate.init(el.confetti, el.balloons);
       Sound.setMuted(Progress.get().muted);
       syncMuteButton();
+      applySettings();
       el.startButton.textContent =
         Progress.get().clearedStops.length ? 'Keep exploring 🌿' : 'Start the adventure 🌿';
     } catch (err) {
@@ -43,6 +45,8 @@ window.Main = (function () {
       start: byId('screen-start'),
       map: byId('screen-map'),
       levelScreen: byId('screen-level'),
+
+      setupBody: byId('setup-body'),
 
       startButton: byId('btn-start'),
       trail: byId('trail'),
@@ -69,6 +73,9 @@ window.Main = (function () {
       clearFriend: byId('clear-friend'),
       clearStars: byId('clear-stars'),
       clearNote: byId('clear-note'),
+      clearScore: byId('clear-score'),
+      clearShare: byId('btn-clear-share'),
+      clearShareNote: byId('clear-share-note'),
       clearNext: byId('btn-clear-next'),
       clearMap: byId('btn-clear-map'),
 
@@ -88,6 +95,7 @@ window.Main = (function () {
       grownupSaveNote: byId('grownup-save-note'),
 
       muteButton: byId('btn-mute'),
+      musicButton: byId('btn-music'),
       grownupLeaf: byId('grownup-leaf'),
       confetti: byId('confetti'),
       balloons: byId('balloons')
@@ -95,14 +103,19 @@ window.Main = (function () {
   }
 
   function wireChrome() {
+    /* The first tap is the only chance to start audio, so it also decides
+       whether the child goes to the wizard or straight back to the trail. */
     el.startButton.addEventListener('click', () => {
       Sound.unlock();
+      if (!Progress.settings().done) return openSetup();
       Sound.speak('Welcome back, explorer!');
       openMap();
     });
 
     el.backButton.addEventListener('click', leaveLevel);
     el.muteButton.addEventListener('click', toggleMute);
+    el.musicButton.addEventListener('click', toggleMusic);
+    el.clearShare.addEventListener('click', shareLevel);
 
     el.profileChip.addEventListener('click', openProfile);
     el.profileBack.addEventListener('click', () => openMap());
@@ -138,6 +151,7 @@ window.Main = (function () {
     level = null;
     Games.stop();
     Rescue.clear();
+    Sound.setMood('jungle');
     show('map');
     refreshMap(characterStop);
   }
@@ -165,9 +179,31 @@ window.Main = (function () {
   }
 
   function openProfile() {
-    Profile.render(el.profileBody);
+    Profile.render(el.profileBody, { onShare: shareAdventure, onSettings: openSetup });
     show('profile');
     Sound.speak(`You are a ${Character.stageInfo(Progress.get().stage).label}.`);
+  }
+
+  /* ---- setup ---------------------------------------------------------------- */
+
+  /* The three saved choices reach three different modules, so one place applies
+     them all — at boot, after the wizard, and after a restore. */
+  function applySettings() {
+    const settings = Progress.settings();
+    Facts.setDifficulty(settings.difficulty);
+    Character.setAvatar(settings.avatar);
+    Sound.setMusicOn(settings.music);
+    syncMusicButton();
+  }
+
+  function openSetup() {
+    Setup.open(el.setupBody, Progress.settings(), chosen => {
+      Progress.updateSettings(chosen);
+      applySettings();
+      Sound.speak("Great choice! Let's explore!");
+      openMap();
+    });
+    show('setup');
   }
 
   /* ---- playing a level ------------------------------------------------------ */
@@ -178,7 +214,18 @@ window.Main = (function () {
 
     const problems = Facts.generateStop(stopId, Progress.get().facts);
 
-    level = { stop, problems, streak: 0, correctFirstTry: 0 };
+    level = {
+      stop, problems,
+      streak: 0, correctFirstTry: 0,
+      rules: Score.rulesFrom(Progress.settings()),
+      startedAt: Date.now(),
+      askedAt: Date.now(),      // when the question on screen appeared
+      wrongs: 0,                // wrong tries on that question alone
+      points: 0
+    };
+
+    /* A rescue is a chase, so the tune becomes one. */
+    Sound.setMood(stop.frame === 'rescue' ? 'chase' : 'jungle');
 
     el.levelStop.textContent = `Stop ${stop.id}`;
     el.levelName.textContent = stop.title;
@@ -198,6 +245,7 @@ window.Main = (function () {
       problems,
       host: el.gameHost,
       hooks: {
+        onQuestionShown: handleQuestionShown,
         onCorrect: handleCorrect,
         onWrong: handleWrong,
         onQuestionDone: handleQuestionDone,
@@ -215,10 +263,20 @@ window.Main = (function () {
     el.pips.innerHTML = html;
   }
 
+  /* The clock for the speed bonus starts when the question lands on screen, not
+     when the level did, so the pause after the previous answer costs nothing. */
+  function handleQuestionShown() {
+    if (!level) return;
+    level.askedAt = Date.now();
+    level.wrongs = 0;
+  }
+
   function handleCorrect(problem, element, attempts) {
     if (!level) return;
     level.streak = attempts === 0 ? level.streak + 1 : 0;
     if (attempts === 0) level.correctFirstTry += 1;
+
+    Celebrate.pulse(el.levelCub, 'cub-happy', 700);
 
     if (level.streak > 0 && level.streak % STREAK_FOR_CHEER === 0) {
       Celebrate.confetti(30);
@@ -229,13 +287,39 @@ window.Main = (function () {
   }
 
   function handleWrong() {
-    if (level) level.streak = 0;
+    if (!level) return;
+    level.streak = 0;
+    level.wrongs += 1;
+    Celebrate.pulse(el.levelCub, 'cub-sad', 600);
   }
 
   function handleQuestionDone(problem, missedFirstTry, stepsDone) {
     Progress.recordAnswer(problem.key, missedFirstTry);
+    awardPoints(problem);
     renderPips(stepsDone);
     Rescue.advance(stepsDone);
+    if (level) level.askedAt = Date.now();      // match boards never re-announce
+  }
+
+  /* Points are scored here rather than on the answer itself, so a question that
+     ended in a reveal still pays something — the promise is that finishing is
+     always worth more than giving up. */
+  function awardPoints(problem) {
+    if (!level) return;
+    const earned = Score.forQuestion(problem, level.stop, {
+      attempts: level.wrongs + 1,
+      elapsedMs: Date.now() - level.askedAt
+    }, level.rules);
+
+    level.points += earned.points;
+    Progress.addScore(earned.points);
+    Celebrate.floatText(el.levelCub, floatLabel(earned), 'float-score');
+  }
+
+  /* "+18 Lightning fast" — the number, plus the one word that explains it. */
+  function floatLabel(earned) {
+    const extra = earned.parts.find(part => part.points > 0 && part.label !== 'Correct');
+    return `+${earned.points}${extra ? ' ' + extra.label : ''}`;
   }
 
   function leaveLevel() {
@@ -276,6 +360,13 @@ window.Main = (function () {
        easy stop would farm the perfect-stop badges. */
     if (perfect && outcome.isNew) Progress.recordPerfectStop();
 
+    const bonus = Score.stopBonus(perfect, finished.rules);
+    if (bonus) {
+      finished.points += bonus;
+      Progress.addScore(bonus);
+    }
+    Progress.save();
+
     Celebrate.flash();
     Celebrate.confetti(perfect ? 110 : 80);
     Celebrate.balloons(perfect ? 7 : 4);
@@ -300,7 +391,13 @@ window.Main = (function () {
     }
 
     el.clearStars.textContent = stars;
+    el.clearScore.textContent = `🏅 ${finished.points} points${bonus ? ' — perfect-stop bonus!' : ''}`;
     el.clearNext.hidden = Progress.currentStop() === finished.stop.id;
+
+    /* Held for the share button, which is tapped by a grown-up after the cub has
+       already run off to the next stop. */
+    lastRun = runSummary(finished, stars);
+    el.clearShareNote.textContent = '';
 
     Sound.speak(perfect ? 'Perfect! Every single one!' : 'Level complete! Great work!');
     open(el.overlayClear);
@@ -341,7 +438,56 @@ window.Main = (function () {
     open(el.overlayRegion);
   }
 
-  /* ---- mute and the grown-up corner ----------------------------------------- */
+  /* ---- sharing --------------------------------------------------------------- */
+
+  /* Everything Share needs about a finished stop, gathered while it is still in
+     memory — Progress keeps totals, not the story of one run. */
+  function runSummary(finished, stars) {
+    const avatar = Character.avatarInfo(Progress.settings().avatar);
+    return {
+      stopId: finished.stop.id,
+      stopName: finished.stop.title,
+      difficulty: Progress.settings().difficulty,
+      avatarName: avatar.name,
+      avatarEmoji: avatar.emoji,
+      solved: finished.problems.length,
+      mistakes: finished.problems.length - finished.correctFirstTry,
+      elapsedMs: Date.now() - finished.startedAt,
+      points: finished.points,
+      stars: stars
+    };
+  }
+
+  function shareLevel() {
+    if (!lastRun) return;
+    sendShare(Share.levelSummary(lastRun), el.clearShareNote);
+  }
+
+  function shareAdventure(note) {
+    const state = Progress.get();
+    const avatar = Character.avatarInfo(state.settings.avatar);
+    /* Share renders; it does not go looking. The rank and the avatar's name live
+       in Character, so they are folded in here rather than looked up there. */
+    const decorated = Object.assign({}, state, {
+      rank: Character.stageInfo(state.stage).label,
+      settings: Object.assign({}, state.settings,
+        { avatarName: avatar.name, avatarEmoji: avatar.emoji })
+    });
+    sendShare(Share.adventureSummary(decorated, Progress.stats(), Facts.STOPS.length), note);
+  }
+
+  function sendShare(text, note) {
+    Share.send(text).then(result => {
+      if (note) note.textContent = shareOutcome(result);
+    });
+  }
+
+  function shareOutcome(result) {
+    if (!result.ok) return result.how === 'cancelled' ? '' : 'Could not share from this browser.';
+    return result.how === 'shared' ? 'Shared! 📣' : 'Copied — paste it anywhere. 📋';
+  }
+
+  /* ---- mute, music and the grown-up corner ----------------------------------- */
 
   function toggleMute() {
     const muted = Sound.setMuted(!Sound.isMuted());
@@ -353,6 +499,21 @@ window.Main = (function () {
     const muted = Sound.isMuted();
     el.muteButton.textContent = muted ? '🔇' : '🔊';
     el.muteButton.setAttribute('aria-label', muted ? 'Turn sound on' : 'Turn sound off');
+  }
+
+  /* Music has its own switch: the tune is the first thing a grown-up wants gone,
+     and losing it should not take the spoken questions with it. */
+  function toggleMusic() {
+    const on = Sound.setMusicOn(!Sound.isMusicOn());
+    Progress.updateSettings({ music: on });
+    syncMusicButton();
+  }
+
+  function syncMusicButton() {
+    const on = Sound.isMusicOn();
+    el.musicButton.textContent = on ? '🎵' : '🎶';
+    el.musicButton.classList.toggle('off', !on);
+    el.musicButton.setAttribute('aria-label', on ? 'Turn music off' : 'Turn music on');
   }
 
   /* A two-second hold, so a curious five-year-old does not stumble in. */
@@ -423,6 +584,7 @@ window.Main = (function () {
       Badges.check();
       Sound.setMuted(Progress.get().muted);
       syncMuteButton();
+      applySettings();
       hide(el.overlayGrownup);
       openMap();
       saveNote('');
@@ -438,6 +600,7 @@ window.Main = (function () {
     Badges.clearAnnouncements(el.badgePop);
     Sound.setMuted(false);
     syncMuteButton();
+    applySettings();                    // back to the defaults, wizard and all
     hide(el.overlayGrownup);
     el.startButton.textContent = 'Start the adventure 🌿';
     show('start');

@@ -21,7 +21,23 @@ window.Progress = (function () {
       muted: false,
       badges: [],        // earned badge ids, in the order they were earned
       perfectStops: 0,   // stops cleared without a single mistake
+      score: 0,          // lifetime points, only ever added to
+      settings: blankSettings(),
       facts: {}          // "7+8" -> { seen, missed }
+    };
+  }
+
+  /* Chosen once in the setup wizard and changeable from the explorer card.
+     Flat on purpose: one shape to default, decode and round-trip. */
+  function blankSettings() {
+    return {
+      done: false,          // has the child been through the wizard yet
+      avatar: 'tiger',
+      difficulty: 'medium',
+      music: true,
+      speed: false,         // faster answers score more — introduces a timer
+      mistakes: false,      // wrong answers cost points
+      bonus: true           // harder questions pay extra
     };
   }
 
@@ -71,9 +87,23 @@ window.Progress = (function () {
         ? parsed.badges.filter(id => typeof id === 'string') : fresh.badges,
       perfectStops: Number.isInteger(parsed.perfectStops)
         ? parsed.perfectStops : fresh.perfectStops,
+      score: Number.isInteger(parsed.score) ? parsed.score : fresh.score,
+      settings: decodeSettings(parsed.settings, fresh.settings),
       facts: (parsed.facts && typeof parsed.facts === 'object' && !Array.isArray(parsed.facts))
         ? parsed.facts : fresh.facts
     };
+  }
+
+  /* Key by key against the blank, so a save written before a setting existed —
+     or hand-edited afterwards — can only ever supply values the game knows, and
+     always in the same order the blank declares them. */
+  function decodeSettings(raw, fresh) {
+    const given = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+    const merged = {};
+    Object.keys(fresh).forEach(key => {
+      merged[key] = typeof given[key] === typeof fresh[key] ? given[key] : fresh[key];
+    });
+    return merged;
   }
 
   function load() {
@@ -219,6 +249,21 @@ window.Progress = (function () {
     return state.muted;
   }
 
+  function settings() { return state.settings; }
+
+  function updateSettings(patch) {
+    state.settings = decodeSettings(Object.assign({}, state.settings, patch), blankSettings());
+    save();
+    return state.settings;
+  }
+
+  /* Points only ever go up, and never below zero even if a rule takes some off.
+     Like recordAnswer, this leaves saving to the end of the level. */
+  function addScore(points) {
+    state.score = Math.max(0, state.score + (points || 0));
+    return state.score;
+  }
+
   return {
     KEY,
     load,
@@ -239,10 +284,14 @@ window.Progress = (function () {
     awardBadge,
     recordPerfectStop,
     setMuted,
+    settings,
+    updateSettings,
+    addScore,
 
     /* Test seam: swap the backend so tests never touch real progress. */
     __test: {
       blank,
+      blankSettings,
       decode,
       useStorage(fake) { storage = fake || realStorage(); }
     }

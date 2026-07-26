@@ -9,11 +9,16 @@
 window.Profile = (function () {
   'use strict';
 
-  function render(host) {
+  /* `actions` are the two things the card can do rather than show — share the
+     adventure and reopen setup. Both optional, so the card still renders
+     read-only if a caller has nothing to wire up. */
+  function render(host, actions) {
     if (!host) return;
     const state = Progress.get();
     const stats = Progress.stats();
     const stage = Character.stageInfo(state.stage);
+    const settings = Progress.settings();
+    const avatar = Character.avatarInfo(settings.avatar);
     const totalStops = Facts.STOPS.length;
 
     host.innerHTML = `
@@ -21,9 +26,15 @@ window.Profile = (function () {
         <div class="card-cub" id="profile-cub"></div>
         <div class="card-titles">
           <p class="card-rank">${stage.label}</p>
-          <h3 class="card-name">Jungle Explorer</h3>
+          <h3 class="card-name">${avatar.name} the Explorer</h3>
           <p class="card-next">${nextRankLine(state)}</p>
         </div>
+      </div>
+
+      <div class="card-actions">
+        <button id="btn-share" class="big-button" type="button">Share my adventure 📣</button>
+        <button id="btn-settings" class="ghost-button" type="button">⚙️ Avatar, difficulty &amp; points</button>
+        <p id="share-note" class="save-note" role="status" aria-live="polite"></p>
       </div>
 
       <div class="profile-bar" role="img"
@@ -51,11 +62,23 @@ window.Profile = (function () {
         ${statTile('🧮', stats.answered, 'sums solved')}
         ${statTile('✅', stats.accuracy + '%', 'first-try right')}
         ${statTile('🎯', state.perfectStops, 'perfect stops')}
-      </div>`;
+        ${statTile('🏅', state.score, 'points')}
+      </div>
+      <p class="setup-note">Playing on ${settings.difficulty} · ${Score.describe(settings)}</p>`;
 
     Character.render(host.querySelector('#profile-cub'), state.stage);
     Character.renderCollection(host.querySelector('#profile-friends'), state.friends);
     Badges.renderGrid(host.querySelector('#profile-badges'));
+    wire(host, actions || {});
+  }
+
+  function wire(host, actions) {
+    const share = host.querySelector('#btn-share');
+    const settings = host.querySelector('#btn-settings');
+    if (actions.onShare) share.addEventListener('click', () => actions.onShare(host.querySelector('#share-note')));
+    else share.hidden = true;
+    if (actions.onSettings) settings.addEventListener('click', actions.onSettings);
+    else settings.hidden = true;
   }
 
   /* Rank comes from cleared regions, so the goal is always "finish the region

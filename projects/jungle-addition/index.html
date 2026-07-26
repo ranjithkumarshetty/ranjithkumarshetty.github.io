@@ -61,6 +61,10 @@
     <a class="start-home" href="https://ranjithkumarshetty.github.io/">Made by Ranjith Kumar Shetty</a>
   </section>
 
+  <section id="screen-setup" class="screen">
+    <main id="setup-body" class="setup-body"></main>
+  </section>
+
   <section id="screen-map" class="screen">
     <header class="map-header">
       <button id="btn-profile" class="profile-chip" type="button"
@@ -113,10 +117,13 @@
       <div id="clear-friend" class="clear-friend">🦜</div>
       <div id="clear-stars" class="clear-stars">⭐⭐⭐</div>
       <p id="clear-note" class="clear-note">A new friend joined your parade!</p>
+      <p id="clear-score" class="clear-score">🏅 0 points</p>
       <div class="overlay-buttons">
         <button id="btn-clear-next" class="big-button" type="button">Next stop →</button>
+        <button id="btn-clear-share" class="ghost-button" type="button">Share this stop 📣</button>
         <button id="btn-clear-map" class="ghost-button" type="button">Back to the map</button>
       </div>
+      <p id="clear-share-note" class="save-note" role="status" aria-live="polite"></p>
     </div>
   </div>
 
@@ -158,6 +165,7 @@
   <!-- Persistent chrome and effect layers --------------------------------- -->
 
   <button id="btn-mute" class="corner-button mute" type="button" aria-label="Turn sound off">🔊</button>
+  <button id="btn-music" class="corner-button music" type="button" aria-label="Turn music off">🎵</button>
   <button id="grownup-leaf" class="corner-button leaf" type="button"
           aria-label="Grown-up corner — press and hold">🍃</button>
 
@@ -169,6 +177,8 @@
   <!-- Load order matters: plain scripts, no modules, so file:// just works. -->
   <script src="js/facts.js"></script>
   <script src="js/progress.js"></script>
+  <script src="js/score.js"></script>
+  <script src="js/share.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/character.js"></script>
   <script src="js/celebrate.js"></script>
@@ -180,6 +190,7 @@
   <script src="js/games.js"></script>
   <script src="js/map.js"></script>
   <script src="js/profile.js"></script>
+  <script src="js/setup.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

@@ -470,7 +470,217 @@
       eq(Badges.earnedCount(), Badges.total(), 'unreachable badges: ' +
         Badges.BADGES.filter(b => !Progress.hasBadge(b.id)).map(b => b.id).join(', '));
     });
+
+    /* ---- difficulty ------------------------------------------------------
+       Every test here runs inside atDifficulty(), which puts the dial back
+       where it found it — the rest of the suite reads the roster at medium. */
+
+    test('an unknown difficulty falls back to medium', () => {
+      atDifficulty('bananas', () => eq(Facts.getDifficulty(), 'medium'));
+    });
+
+    test('easy asks for two addends everywhere', () => {
+      atDifficulty('easy', () => {
+        Facts.STOPS.forEach(raw => {
+          const config = Facts.stop(raw.id);
+          ok(!config.pick || config.pick <= 2, `stop ${raw.id} still picks ${config.pick}`);
+          ok(!config.compound, `stop ${raw.id} is still compound`);
+          Facts.poolForStop(raw.id).forEach(addends => {
+            eq(addends.length, 2, `stop ${raw.id}: ${addends.join('+')} is not a pair`);
+          });
+        });
+      });
+    });
+
+    /* The gentler pool is a second source of facts, so it needs the same range
+       check the medium pool gets — an easy stop must still be that stop. */
+    test('the easy pool stays inside each stop declared answer range', () => {
+      atDifficulty('easy', () => {
+        Facts.STOPS.forEach(raw => {
+          Facts.poolForStop(raw.id).forEach(addends => {
+            const total = addends.reduce((a, b) => a + b, 0);
+              ok(total >= raw.min && total <= raw.max,
+              `stop ${raw.id}: ${addends.join('+')}=${total} outside ${raw.min}..${raw.max}`);
+          });
+        });
+      });
+    });
+
+    test('hard puts near-miss distractors on every stop', () => {
+      atDifficulty('hard', () => {
+        Facts.STOPS.forEach(raw => ok(Facts.stop(raw.id).tight, `stop ${raw.id} is not tight`));
+      });
+    });
+
+    test('easy spreads the wrong answers apart, hard crowds them in', () => {
+      atDifficulty('easy', () => {
+        Facts.buildOptions(10, seeded(3)).forEach(option => {
+          ok(option === 10 || Math.abs(option - 10) >= 2, `${option} sits next to the answer`);
+        });
+      });
+      atDifficulty('hard', () => {
+        ok(Facts.buildOptions(10, seeded(3)).includes(11), 'hard must offer the near miss');
+      });
+    });
+
+    test('an explicit spread overrides the difficulty default', () => {
+      atDifficulty('easy', () => {
+        ok(Facts.buildOptions(10, seeded(3), 'tight').includes(11));
+      });
+    });
+
+    /* ---- avatars ---------------------------------------------------------- */
+
+    test('setAvatar ignores an id that is not on the roster', () => {
+      const before = Character.getAvatar();
+      eq(Character.setAvatar('dragon'), 'tiger', 'unknown avatars fall back to the tiger');
+      eq(Character.avatarInfo('panda').emoji, '🐼');
+      Character.setAvatar(before);
+    });
+
+    test('every avatar draws every growth stage in its own colours', () => {
+      const before = Character.getAvatar();
+      Character.AVATARS.forEach(avatar => {
+        for (let stage = 0; stage < Character.STAGES.length; stage++) {
+          const svg = Character.markupFor(avatar.id, stage);
+          ok(svg.indexOf(avatar.fur) !== -1, `${avatar.id} stage ${stage} lost its palette`);
+          ok(svg.indexOf(`cub-stage-${stage}`) !== -1, `${avatar.id} stage ${stage} mislabelled`);
+        }
+        const top = Character.markupFor(avatar.id, Character.STAGES.length - 1);
+        ok(top.indexOf('cub-crown') !== -1, `${avatar.id} never gets the crown`);
+      });
+      eq(Character.getAvatar(), before, 'drawing an avatar must not select it');
+    });
+
+    /* ---- score.js --------------------------------------------------------- */
+
+    const EASY_SUM = { answer: 5, addends: [2, 3] };
+    const HARD_SUM = { answer: 14, addends: [5, 4, 5] };
+    const OFF = { speed: false, mistakes: false, bonus: false };
+
+    test('with every rule off a question is worth the base, however it went', () => {
+      eq(Score.forQuestion(EASY_SUM, {}, { attempts: 1, elapsedMs: 500 }, OFF).points, Score.BASE);
+      eq(Score.forQuestion(HARD_SUM, { tight: true }, { attempts: 5, elapsedMs: 90000 }, OFF).points,
+        Score.BASE, 'a slow, messy answer still pays the base');
+    });
+
+    test('the speed bonus pays only on a first-try answer', () => {
+      const rules = { speed: true, mistakes: false, bonus: false };
+      const quick = Score.forQuestion(EASY_SUM, {}, { attempts: 1, elapsedMs: 1000 }, rules);
+      ok(quick.points > Score.BASE, 'a fast first try earns extra');
+      eq(Score.forQuestion(EASY_SUM, {}, { attempts: 2, elapsedMs: 1000 }, rules).points, Score.BASE,
+        'a fast second try earns nothing extra');
+      eq(Score.forQuestion(EASY_SUM, {}, { attempts: 1, elapsedMs: 60000 }, rules).points, Score.BASE,
+        'a slow first try earns nothing extra');
+    });
+
+    test('the hard-question bonus reads the roster judgement of what is hard', () => {
+      const rules = { speed: false, mistakes: false, bonus: true };
+      eq(Score.forQuestion(EASY_SUM, {}, { attempts: 1 }, rules).points, Score.BASE,
+        'a small two-addend sum is not a hard question');
+      const hard = Score.forQuestion(HARD_SUM, { tight: true }, { attempts: 1 }, rules);
+      ok(hard.points > Score.BASE, 'a big three-addend sum on a tricky stop pays more');
+      eq(hard.parts.filter(part => part.points > 0).length, 4,
+        'base, big answer, three numbers and tricky stop');
+    });
+
+    /* The whole promise of the scoring: trying again is never worth nothing. */
+    test('points never fall below the floor however many tries it took', () => {
+      const rules = { speed: false, mistakes: true, bonus: false };
+      eq(Score.forQuestion(EASY_SUM, {}, { attempts: 12 }, rules).points, Score.MIN_POINTS);
+    });
+
+    test('rulesFrom keeps the bonus on and the punishing rules off by default', () => {
+      eq(Score.rulesFrom({}), { speed: false, mistakes: false, bonus: true });
+      eq(Score.rulesFrom(), { speed: false, mistakes: false, bonus: true });
+      eq(Score.rulesFrom({ speed: true, bonus: false, avatar: 'fox' }),
+        { speed: true, mistakes: false, bonus: false }, 'unknown keys are dropped');
+    });
+
+    test('the perfect-stop bonus needs both a clean sweep and the bonus rule', () => {
+      ok(Score.stopBonus(true, { bonus: true }) > 0);
+      eq(Score.stopBonus(false, { bonus: true }), 0, 'a stop with a slip earns no lump sum');
+      eq(Score.stopBonus(true, { bonus: false }), 0, 'the rule is off');
+    });
+
+    test('describe names the rules in play, or says the scoring is relaxed', () => {
+      eq(Score.describe(OFF), 'relaxed scoring');
+      eq(Score.describe({ speed: true, mistakes: false, bonus: true }),
+        'speed bonus, hard-question bonus');
+    });
+
+    /* ---- share.js --------------------------------------------------------- */
+
+    test('durations read the way they are spoken', () => {
+      eq(Share.formatDuration(0), '0s');
+      eq(Share.formatDuration(48000), '48s');
+      eq(Share.formatDuration(134000), '2m 14s');
+      eq(Share.formatDuration(3780000), '1h 3m');
+      eq(Share.formatDuration(-500), '0s', 'a clock skew must not print a minus');
+    });
+
+    test('a stop summary carries the numbers a grown-up wants to send', () => {
+      const text = Share.levelSummary({
+        stopId: 3, stopName: 'Vine Bridge', avatarEmoji: '🦊', avatarName: 'Fox',
+        difficulty: 'easy', solved: 6, mistakes: 1, elapsedMs: 95000, points: 72, stars: '⭐⭐⭐'
+      });
+      ok(text.indexOf('Stop 3: Vine Bridge') !== -1, 'names the stop');
+      ok(text.indexOf('Easy') !== -1, 'names the difficulty');
+      ok(text.indexOf('6 sums solved') !== -1, 'counts the sums');
+      ok(text.indexOf('1 slip') !== -1, 'one slip, not one slips');
+      ok(text.indexOf('1m 35s') !== -1, 'says how long it took');
+      ok(text.indexOf(Share.HOME) !== -1, 'links back to the game');
+    });
+
+    test('an adventure summary reads sensibly from a blank save', () => {
+      const text = Share.adventureSummary(Progress.__test.blank(),
+        { answered: 0, missed: 0, accuracy: 100 }, 20);
+      ok(text.indexOf('0 of 20 stops cleared') !== -1);
+      ok(text.split('\n').length === 6, 'six lines, always');
+    });
+
+    /* ---- settings --------------------------------------------------------- */
+
+    test('settings survive a save and a load', () => {
+      Progress.__test.useStorage(fakeStorage());
+      Progress.reset();
+      Progress.updateSettings({ avatar: 'koala', difficulty: 'hard', speed: true, done: true });
+      const saved = Progress.settings();
+      Progress.load();
+      eq(Progress.settings(), saved);
+      eq(Progress.settings().avatar, 'koala');
+    });
+
+    test('a save cannot smuggle in settings the game does not know', () => {
+      const decoded = Progress.__test.decode(JSON.stringify({
+        version: 1,
+        settings: { avatar: 'fox', difficulty: 7, hacked: true }
+      }));
+      eq(decoded.settings.avatar, 'fox', 'a known value of the right type is kept');
+      eq(decoded.settings.difficulty, 'medium', 'a value of the wrong type falls back');
+      eq(Object.keys(decoded.settings), Object.keys(Progress.__test.blankSettings()),
+        'no extra keys, and always in the blank order');
+    });
+
+    test('the lifetime score only ever goes up', () => {
+      Progress.__test.useStorage(fakeStorage());
+      Progress.reset();
+      Progress.addScore(30);
+      eq(Progress.addScore(-100), 0, 'points can be taken off, but never past zero');
+      eq(Progress.get().score, 0);
+    });
   };
+
+  /* Run `fn` with the difficulty dial turned, then always turn it back. */
+  function atDifficulty(level, fn) {
+    const before = Facts.getDifficulty();
+    try {
+      Facts.setDifficulty(level);
+      fn();
+    } finally {
+      Facts.setDifficulty(before);
+    }
+  }
 
   /* ---- helpers ---------------------------------------------------------- */
 
